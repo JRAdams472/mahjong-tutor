@@ -30,9 +30,9 @@ $RECYCLE.BIN/
 .env.*
 !.env.example
 
-## Runtime data (local dev)
-data/
-uploads/
+## Runtime data (local dev) — anchored to repo root so source folders named Data/ are unaffected
+/data/
+/uploads/
 
 ## Coverage
 coverage.*

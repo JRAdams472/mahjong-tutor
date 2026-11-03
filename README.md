@@ -45,7 +45,13 @@ docker compose up -d postgres
 dotnet watch --project src/MahjongTutor.Server
 ```
 
-Postgres is published on host port **5433** (not the default 5432, to avoid colliding with a local Postgres install) — point EF tools / DB clients at `localhost:5433`. Set `POSTGRES_PASSWORD` in your environment or a `.env` file to change the default dev password (`mahjong`). For anything beyond a home network, pick a real password.
+Postgres is published on host port **5433** (not the default 5432, to avoid colliding with a local Postgres install) — point EF tools / DB clients at `localhost:5433`. **EF Core migrations apply automatically at app startup.** To iterate on the schema:
+
+```powershell
+dotnet ef migrations add <Name> -p src/MahjongTutor.Server -o Data/Migrations
+```
+
+Set `POSTGRES_PASSWORD` in your environment or a `.env` file to change the default dev password (`mahjong`). For anything beyond a home network, pick a real password.
 
 ## Tests
 
