@@ -20,138 +20,15 @@ else
 {
     var s = Engine.State;
     <div class="playgrid">
-        <div class="table">
-            <div class="status">
-                @if (s.Phase == GamePhase.Finished)
-                {
-                    <span class="notice ok">
-                        Game over — @(s.WinnerSeat is { } w ? $"seat {w} won with {s.WinningHand?.Id} ({s.WinningHand?.Points} pts)" : "wall game")
-                    </span>
-                }
-                else if (s.Phase == GamePhase.Charleston)
-                {
-                    <span>Charleston — @CharlestonLabel(s.CharlestonStage)</span>
-                }
-                else
-                {
-                    <span>Turn: seat @s.CurrentSeat (@s.Stage) — wall @s.WallRemaining</span>
-                }
-            </div>
-
-            @* opponents *@
-            <div class="opponents">
-                @for (var i = 1; i < 4; i++)
-                {
-                    var seat = s.Seats[i];
-                    <div class="opp">
-                        <div class="opp-name">Seat @i @(seat.Dead ? "(dead)" : s.CurrentSeat == i ? "◀" : "")</div>
-                        <div class="opp-rack">
-                            @for (var k = 0; k < seat.Concealed.Total; k++)
-                            {
-                                <img class="tile back" src="tiles/default/back.svg" />
-                            }
-                        </div>
-                        <div class="exposures">
-                            @foreach (var m in seat.Exposures)
-                            {
-                                foreach (var t in m.Tiles) { <TileImg TileKind="t" /> }
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-
-            @* discard pools *@
-            <div class="pools">
-                @for (var i = 0; i < 4; i++)
-                {
-                    <div class="pool">
-                        @foreach (var t in s.Seats[i].Discards) { <TileImg TileKind="t" /> }
-                    </div>
-                }
-            </div>
-
-            @* pending discard *@
-            @if (s.PendingDiscard is { } pd)
-            {
-                <div class="pending">Callable: <TileImg TileKind="pd" /></div>
-            }
-
-            @* my rack *@
-            <div class="myrack">
-                @foreach (var t in SortedRack())
-                {
-                    var tt = t;
-                    <span class="@TileClass(tt)" @onclick="() => TileClicked(tt)">
-                        <TileImg TileKind="tt" />
-                    </span>
-                }
-            </div>
-
-            @* action bar *@
-            <div class="actions">
-                @if (s.Phase == GamePhase.Charleston)
-                {
-                    <div class="hint">@CharlestonHint(s)</div>
-                    if (s.CharlestonStage == CharlestonStage.Courtesy && !s.PendingPasses.ContainsKey(0))
-                    {
-                        <span>Courtesy: pick 0–3 (selected @_selected.Count)</span>
-                        <button class="btn primary" disabled="@(_selected.Count > 3)"
-                                @onclick="() => Act(() => Session.HumanCourtesyAsync(_selected))">Pass</button>
-                    }
-                    else if (s.CharlestonStage != CharlestonStage.Vote && s.CharlestonStage != CharlestonStage.Done
-                             && !s.PendingPasses.ContainsKey(0))
-                    {
-                        <span><b>Click 3 tiles</b> in your rack to select them (selected @_selected.Count), then:</span>
-                        <button class="btn primary" disabled="@(_selected.Count != 3)"
-                                @onclick="() => Act(() => Session.HumanPassAsync(_selected))">
-                            Pass @PassDirection(s.CharlestonStage)
-                        </button>
-                    }
-                    else if (s.CharlestonStage == CharlestonStage.Vote && !s.PendingVotes.ContainsKey(0))
-                    {
-                        <span>Second Charleston?</span>
-                        <button class="btn" @onclick="() => Act(() => Session.HumanVoteAsync(true))">Go again</button>
-                        <button class="btn" @onclick="() => Act(() => Session.HumanVoteAsync(false))">Stop</button>
-                    }
-                    else
-                    {
-                        <span class="dim">Waiting for the other players…</span>
-                    }
-                }
-                else if (s.Phase == GamePhase.Play && s.CurrentSeat == 0)
-                {
-                    if (s.Stage == TurnStage.AwaitDraw)
-                    {
-                        <button class="btn primary" @onclick="() => Act(() => Session.HumanDrawAsync())">Draw</button>
-                    }
-                    else if (s.Stage == TurnStage.AwaitDiscard)
-                    {
-                        <span>Click a tile to discard</span>
-                        @foreach (var x in BotBrain.JokerExchanges(s, 0))
-                        {
-                            var xx = x;
-                            <button class="btn" @onclick="() => Act(() => Session.HumanExchangeAsync(xx.owner, xx.meld, xx.natural))">
-                                Swap @xx.natural.Code() for joker
-                            </button>
-                        }
-                        <button class="btn" @onclick="() => Act(() => Session.HumanMahjongAsync())">Mahjong!</button>
-                    }
-                }
-                @if (s.Stage == TurnStage.CallWindow && s.PendingOptions.TryGetValue(0, out var opts)
-                     && !s.PendingResponded.Contains(0))
-                {
-                    @foreach (var k in opts)
-                    {
-                        var kk = k;
-                        <button class="btn" @onclick="() => Act(() => Session.HumanClaimAsync(kk))">@k</button>
-                    }
-                    <button class="btn" @onclick="() => Act(() => Session.HumanClaimAsync(ClaimKind.Mahjong))">Mahjong!</button>
-                    <button class="btn primary" @onclick="() => Act(() => Session.HumanClaimAsync(null))">Pass</button>
-                }
-            </div>
-            @if (_error != null) { <div class="notice bad">@_error</div> }
-        </div>
+        <GameTable State="s" Seat="0" Error="@_error"
+                   OnPass="t => Act(() => Session.HumanPassAsync(t))"
+                   OnCourtesy="t => Act(() => Session.HumanCourtesyAsync(t))"
+                   OnVote="v => Act(() => Session.HumanVoteAsync(v))"
+                   OnDraw="() => Act(() => Session.HumanDrawAsync())"
+                   OnDiscard="t => Act(() => Session.HumanDiscardAsync(t))"
+                   OnClaim="k => Act(() => Session.HumanClaimAsync(k))"
+                   OnMahjong="() => Act(() => Session.HumanMahjongAsync())"
+                   OnExchange="x => Act(() => Session.HumanExchangeAsync(x.owner, x.meld, x.natural))" />
 
         @* coach panel *@
         <div class="coach">
@@ -194,7 +71,6 @@ else
 @code {
     private GameEngine? Engine;
     private string? _error;
-    private List<Tile> _selected = [];
 
     private async Task Start()
     {
@@ -202,11 +78,6 @@ else
         try { Engine = await Session.StartAsync(); }
         catch (Exception ex) { _error = ex.Message; }
     }
-
-    private List<Tile> SortedRack() =>
-        Engine!.State.Seats[0].Concealed.ToList();
-
-    private string TileClass(Tile t) => _selected.Contains(t) ? "sel" : "";
 
     private MarkupString Suggestion(GameState s)
     {
@@ -238,63 +109,10 @@ else
     private static string Codes(IEnumerable<Tile> ts) =>
         string.Join(" ", ts.Select(t => t.Code()));
 
-    private static string CharlestonLabel(CharlestonStage c) => c switch
-    {
-        CharlestonStage.PassRight => "first pass — to the right",
-        CharlestonStage.PassAcross => "first pass — across the table",
-        CharlestonStage.PassLeft => "first pass — to the left",
-        CharlestonStage.Vote => "vote on a second Charleston",
-        CharlestonStage.SecondLeft => "second pass — to the left",
-        CharlestonStage.SecondAcross => "second pass — across the table",
-        CharlestonStage.SecondRight => "second pass — to the right",
-        CharlestonStage.Courtesy => "courtesy — swap with the player across",
-        _ => "finishing up",
-    };
-
-    private static string PassDirection(CharlestonStage c) => c switch
-    {
-        CharlestonStage.PassRight or CharlestonStage.SecondRight => "right",
-        CharlestonStage.PassAcross or CharlestonStage.SecondAcross => "across",
-        _ => "left",
-    };
-
-    private MarkupString CharlestonHint(GameState s)
-    {
-        var text = s.CharlestonStage switch
-        {
-            CharlestonStage.PassRight or CharlestonStage.PassAcross or CharlestonStage.PassLeft =>
-                "The <b>Charleston</b> mixes everyone's hands: pass 3 unwanted tiles three times — right, across, then left.",
-            CharlestonStage.Vote =>
-                "First round done. A second Charleston runs <b>only if all four players agree</b> — it reverses direction (left, across, right).",
-            CharlestonStage.SecondLeft or CharlestonStage.SecondAcross or CharlestonStage.SecondRight =>
-                "Second Charleston: same idea, opposite order — left, across, right.",
-            CharlestonStage.Courtesy =>
-                "Last step: offer 0–3 tiles to trade with the player <b>across</b> the table. Each pair swaps the smaller of the two offers — offer 0 to pass nothing.",
-            _ => "Waiting for the other players…",
-        };
-        return new(text);
-    }
-
-    private async Task TileClicked(Tile t)
-    {
-        var s = Engine!.State;
-        if (s.Phase == GamePhase.Charleston && !s.PendingPasses.ContainsKey(0)
-            && s.CharlestonStage != CharlestonStage.Vote && s.CharlestonStage != CharlestonStage.Done)
-        {
-            if (_selected.Contains(t)) _selected.Remove(t);
-            else if (_selected.Count < 3) _selected.Add(t);
-        }
-        else if (s.Phase == GamePhase.Play && s.Stage == TurnStage.AwaitDiscard
-                 && s.CurrentSeat == 0)
-        {
-            await Act(() => Session.HumanDiscardAsync(t));
-        }
-    }
-
     private async Task Act(Func<Task> action)
     {
         _error = null;
-        try { await action(); _selected.Clear(); }
+        try { await action(); }
         catch (Exception ex) { _error = ex.Message; }
     }
 }

@@ -1,0 +1,214 @@
+@using MahjongTutor.Core.Bots
+@using MahjongTutor.Core.Rules
+@using MahjongTutor.Core.Tiles
+
+@* Shared table view for solo + multiplayer. Actions surface as callbacks. *@
+<div class="table">
+    <div class="status">
+        @if (State.Phase == GamePhase.Finished)
+        {
+            <span class="notice ok">
+                Game over — @(State.WinnerSeat is { } w ? $"seat {w} won with {State.WinningHand?.Id} ({State.WinningHand?.Points} pts)" : "wall game")
+            </span>
+        }
+        else if (State.Phase == GamePhase.Charleston)
+        {
+            <span>Charleston — @CharlestonLabel(State.CharlestonStage)</span>
+        }
+        else
+        {
+            <span>Turn: seat @State.CurrentSeat (@State.Stage) — wall @State.WallRemaining</span>
+        }
+    </div>
+
+    <div class="opponents">
+        @foreach (var i in Enumerable.Range(0, 4).Where(x => x != Seat))
+        {
+            var seat = State.Seats[i];
+            <div class="opp">
+                <div class="opp-name">@SeatName(i) @(seat.Dead ? "(dead)" : State.CurrentSeat == i ? "◀" : "")</div>
+                <div class="opp-rack">
+                    @for (var k = 0; k < seat.Concealed.Total; k++)
+                    {
+                        <img class="tile back" src="tiles/default/back.svg" />
+                    }
+                </div>
+                <div class="exposures">
+                    @foreach (var m in seat.Exposures)
+                    {
+                        foreach (var t in m.Tiles) { <TileImg TileKind="t" /> }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="pools">
+        @for (var i = 0; i < 4; i++)
+        {
+            <div class="pool">
+                @foreach (var t in State.Seats[i].Discards) { <TileImg TileKind="t" /> }
+            </div>
+        }
+    </div>
+
+    @if (State.PendingDiscard is { } pd)
+    {
+        <div class="pending">Callable: <TileImg TileKind="pd" /></div>
+    }
+
+    <div class="myrack">
+        @foreach (var t in SortedRack())
+        {
+            var tt = t;
+            <span class="@TileClass(tt)" @onclick="() => TileClicked(tt)">
+                <TileImg TileKind="tt" />
+            </span>
+        }
+    </div>
+
+    <div class="actions">
+        @if (State.Phase == GamePhase.Charleston)
+        {
+            <div class="hint">@CharlestonHint(State)</div>
+            if (State.CharlestonStage == CharlestonStage.Courtesy && !State.PendingPasses.ContainsKey(Seat))
+            {
+                <span>Courtesy: pick 0–3 (selected @_selected.Count)</span>
+                <button class="btn primary" disabled="@(_selected.Count > 3)"
+                        @onclick="() => Act(() => OnCourtesy.InvokeAsync([.. _selected]))">Pass</button>
+            }
+            else if (State.CharlestonStage != CharlestonStage.Vote && State.CharlestonStage != CharlestonStage.Done
+                     && !State.PendingPasses.ContainsKey(Seat))
+            {
+                <span><b>Click 3 tiles</b> to select them (selected @_selected.Count), then:</span>
+                <button class="btn primary" disabled="@(_selected.Count != 3)"
+                        @onclick="() => Act(() => OnPass.InvokeAsync([.. _selected]))">
+                    Pass @PassDirection(State.CharlestonStage)
+                </button>
+            }
+            else if (State.CharlestonStage == CharlestonStage.Vote && !State.PendingVotes.ContainsKey(Seat))
+            {
+                <span>Second Charleston?</span>
+                <button class="btn" @onclick="() => Act(() => OnVote.InvokeAsync(true))">Go again</button>
+                <button class="btn" @onclick="() => Act(() => OnVote.InvokeAsync(false))">Stop</button>
+            }
+            else
+            {
+                <span class="dim">Waiting for the other players…</span>
+            }
+        }
+        else if (State.Phase == GamePhase.Play && State.CurrentSeat == Seat)
+        {
+            if (State.Stage == TurnStage.AwaitDraw)
+            {
+                <button class="btn primary" @onclick="() => Act(() => OnDraw.InvokeAsync())">Draw</button>
+            }
+            else if (State.Stage == TurnStage.AwaitDiscard)
+            {
+                <span>Click a tile to discard</span>
+                @foreach (var x in BotBrain.JokerExchanges(State, Seat))
+                {
+                    var xx = x;
+                    <button class="btn" @onclick="() => Act(() => OnExchange.InvokeAsync(xx))">
+                        Swap @xx.natural.Code() for joker
+                    </button>
+                }
+                <button class="btn" @onclick="() => Act(() => OnMahjong.InvokeAsync())">Mahjong!</button>
+            }
+        }
+        @if (State.Stage == TurnStage.CallWindow && State.PendingOptions.TryGetValue(Seat, out var opts)
+             && !State.PendingResponded.Contains(Seat))
+        {
+            @foreach (var k in opts)
+            {
+                var kk = k;
+                <button class="btn" @onclick="() => Act(() => OnClaim.InvokeAsync(kk))">@k</button>
+            }
+            <button class="btn" @onclick="() => Act(() => OnClaim.InvokeAsync(ClaimKind.Mahjong))">Mahjong!</button>
+            <button class="btn primary" @onclick="() => Act(() => OnClaim.InvokeAsync(null))">Pass</button>
+        }
+    </div>
+    @if (Error != null) { <div class="notice bad">@Error</div> }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public GameState State { get; set; } = null!;
+    [Parameter] public int Seat { get; set; }
+    [Parameter] public Func<int, string>? SeatNamer { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback<List<Tile>> OnPass { get; set; }
+    [Parameter] public EventCallback<List<Tile>> OnCourtesy { get; set; }
+    [Parameter] public EventCallback<bool> OnVote { get; set; }
+    [Parameter] public EventCallback OnDraw { get; set; }
+    [Parameter] public EventCallback<Tile> OnDiscard { get; set; }
+    [Parameter] public EventCallback<ClaimKind?> OnClaim { get; set; }
+    [Parameter] public EventCallback OnMahjong { get; set; }
+    [Parameter] public EventCallback<(int owner, int meld, Tile natural)> OnExchange { get; set; }
+
+    private List<Tile> _selected = [];
+    private string? _error;
+    private string? ShownError => Error ?? _error;
+
+    private List<Tile> SortedRack() => State.Seats[Seat].Concealed.ToList();
+    private string TileClass(Tile t) => _selected.Contains(t) ? "sel" : "";
+    private string SeatName(int i) => SeatNamer?.Invoke(i) ?? $"Seat {i}";
+
+    private async Task Act(Func<Task> action)
+    {
+        _error = null;
+        try { await action(); _selected.Clear(); }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task TileClicked(Tile t)
+    {
+        if (State.Phase == GamePhase.Charleston && !State.PendingPasses.ContainsKey(Seat)
+            && State.CharlestonStage != CharlestonStage.Vote && State.CharlestonStage != CharlestonStage.Done)
+        {
+            if (_selected.Contains(t)) _selected.Remove(t);
+            else if (_selected.Count < 3) _selected.Add(t);
+        }
+        else if (State.Phase == GamePhase.Play && State.Stage == TurnStage.AwaitDiscard
+                 && State.CurrentSeat == Seat)
+        {
+            await Act(() => OnDiscard.InvokeAsync(t));
+        }
+    }
+
+    private static string CharlestonLabel(CharlestonStage c) => c switch
+    {
+        CharlestonStage.PassRight => "first pass — to the right",
+        CharlestonStage.PassAcross => "first pass — across the table",
+        CharlestonStage.PassLeft => "first pass — to the left",
+        CharlestonStage.Vote => "vote on a second Charleston",
+        CharlestonStage.SecondLeft => "second pass — to the left",
+        CharlestonStage.SecondAcross => "second pass — across the table",
+        CharlestonStage.SecondRight => "second pass — to the right",
+        CharlestonStage.Courtesy => "courtesy — swap with the player across",
+        _ => "finishing up",
+    };
+
+    private static string PassDirection(CharlestonStage c) => c switch
+    {
+        CharlestonStage.PassRight or CharlestonStage.SecondRight => "right",
+        CharlestonStage.PassAcross or CharlestonStage.SecondAcross => "across",
+        _ => "left",
+    };
+
+    private MarkupString CharlestonHint(GameState s)
+    {
+        var text = s.CharlestonStage switch
+        {
+            CharlestonStage.PassRight or CharlestonStage.PassAcross or CharlestonStage.PassLeft =>
+                "The <b>Charleston</b> mixes everyone's hands: pass 3 unwanted tiles three times — right, across, then left.",
+            CharlestonStage.Vote =>
+                "First round done. A second Charleston runs <b>only if all four players agree</b> — it reverses direction.",
+            CharlestonStage.SecondLeft or CharlestonStage.SecondAcross or CharlestonStage.SecondRight =>
+                "Second Charleston: same idea, opposite order — left, across, right.",
+            CharlestonStage.Courtesy =>
+                "Last step: offer 0–3 tiles to trade with the player <b>across</b>. Each pair swaps the smaller offer.",
+            _ => "Waiting for the other players…",
+        };
+        return new(text);
+    }
+}

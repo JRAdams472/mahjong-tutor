@@ -1,0 +1,60 @@
+@page "/lobby"
+@using MahjongTutor.Server.Game
+@inject RoomManager Rooms
+@inject PlayerSession Me
+@inject NavigationManager Nav
+
+<PageTitle>Lobby — MahjongTutor</PageTitle>
+
+<h1>Multiplayer lobby</h1>
+<p class="dim">Pick a name, create a room or join one — up to 4 players, bots fill empty seats.</p>
+
+<div class="toolbar">
+    <input class="input" placeholder="Your name" @bind="_name" maxlength="24" />
+    <button class="btn primary" @onclick="Create" disabled="@string.IsNullOrWhiteSpace(_name)">Create room</button>
+</div>
+@if (_error != null) { <div class="notice bad">@_error</div> }
+
+<h2>Open rooms</h2>
+@{ var open = Rooms.Rooms.Where(r => !r.Started && r.Humans < 4).ToList(); }
+@if (open.Count == 0)
+{
+    <p class="dim">No open rooms — create one.</p>
+}
+@foreach (var r in open)
+{
+    <div class="fit">
+        <b>Room @r.Code</b> — @r.Humans/4 players: @string.Join(", ", r.SeatNames.Values)
+        <button class="btn small" @onclick="() => Join(r.Code)"
+                disabled="@string.IsNullOrWhiteSpace(_name)">Join</button>
+    </div>
+}
+
+<h2>In progress</h2>
+@foreach (var r in Rooms.Rooms.Where(r => r.Started))
+{
+    <div class="fit dim">
+        Room @r.Code — @string.Join(", ", r.SeatNames.Values)
+    </div>
+}
+
+@code {
+    private string _name = "";
+    private string? _error;
+
+    private void Create()
+    {
+        var room = Rooms.CreateRoom(_name.Trim());
+        Me.Name = _name.Trim(); Me.RoomCode = room.Code; Me.Seat = 0;
+        Nav.NavigateTo($"/room/{room.Code}");
+    }
+
+    private void Join(string code)
+    {
+        var room = Rooms.Join(code, _name.Trim());
+        if (room == null) { _error = "Room is full or already started."; return; }
+        Me.Name = _name.Trim(); Me.RoomCode = room.Code;
+        Me.Seat = room.SeatNames.First(kv => kv.Value == Me.Name).Key;
+        Nav.NavigateTo($"/room/{room.Code}");
+    }
+}

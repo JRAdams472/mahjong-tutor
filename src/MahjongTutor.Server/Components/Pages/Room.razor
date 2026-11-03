@@ -1,0 +1,76 @@
+@page "/room/{Code}"
+@using MahjongTutor.Core.Rules
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Game
+@inject RoomManager Rooms
+@inject PlayerSession Me
+@implements IDisposable
+
+<PageTitle>Room @Code — MahjongTutor</PageTitle>
+
+@{ var room = Rooms.Rooms.FirstOrDefault(r => r.Code == Code); }
+@if (room == null)
+{
+    <h1>Room @Code</h1>
+    <div class="notice bad">That room doesn't exist (anymore).</div>
+}
+else if (!room.Started)
+{
+    <h1>Room @Code — waiting for players</h1>
+    <p class="dim">Share the code <b>@Code</b> — friends on your LAN join from the lobby.</p>
+    @for (var i = 0; i < 4; i++)
+    {
+        <div class="fit">
+            Seat @i: @(room.SeatNames.TryGetValue(i, out var n) ? n : "bot")
+        </div>
+    }
+    <p>@room.Humans human(s) — the rest will be bots.</p>
+    <button class="btn primary" @onclick="Start">Start game</button>
+    @if (_error != null) { <div class="notice bad">@_error</div> }
+}
+else
+{
+    var s = room.Engine!.State;
+    <h3>Room @Code — you are @Me.Name (seat @Me.Seat)</h3>
+    <GameTable State="s" Seat="Me.Seat" Error="@_error"
+               SeatNamer="i => Namer(room, i)"
+               OnPass="t => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.SubmitPass(Me.Seat, t)))"
+               OnCourtesy="t => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.SubmitCourtesy(Me.Seat, t)))"
+               OnVote="v => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.Vote(Me.Seat, v)))"
+               OnDraw="() => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.Draw(Me.Seat)))"
+               OnDiscard="t => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.Discard(Me.Seat, t)))"
+               OnClaim="k => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.Claim(Me.Seat, k)))"
+               OnMahjong="() => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.DeclareMahjong(Me.Seat)))"
+               OnExchange="x => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.ExchangeJoker(Me.Seat, x.owner, x.meld, x.natural)))" />
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        Rooms.Changed += OnChanged;
+    }
+
+    private static string Namer(MahjongTutor.Server.Game.Room room, int i) =>
+        room.SeatNames.GetValueOrDefault(i, $"bot {i}");
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Rooms.Changed -= OnChanged;
+
+    private async Task Start()
+    {
+        _error = null;
+        var room = Rooms.Rooms.FirstOrDefault(r => r.Code == Code);
+        if (room != null && !await Rooms.StartAsync(room))
+            _error = "No active card — enter one under Cards first.";
+    }
+
+    private async Task Act(Func<Task<IReadOnlyList<GameEvent>>> action)
+    {
+        _error = null;
+        try { await action(); }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}

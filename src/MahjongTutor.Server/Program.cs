@@ -43,6 +43,8 @@ builder.Services.AddDbContextFactory<MahjongTutorDbContext>(
 builder.Services.AddScoped<ICardStore, CardStore>();
 builder.Services.AddSingleton<MahjongTutor.Server.Tiles.TileSetManager>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.GameSession>();
+builder.Services.AddSingleton<MahjongTutor.Server.Game.RoomManager>();
+builder.Services.AddScoped<MahjongTutor.Server.Game.PlayerSession>();
 
 var app = builder.Build();
 
