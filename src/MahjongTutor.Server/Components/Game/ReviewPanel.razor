@@ -1,0 +1,40 @@
+@using MahjongTutor.Core.Rules
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Game
+
+<div class="review">
+    <h4>Post-game review</h4>
+    @if (Notes is { Count: > 0 })
+    {
+        @foreach (var n in Notes.AsEnumerable().Reverse().TakeLast(8))
+        {
+            <div class="cnote @n.Severity">@n.Text</div>
+        }
+    }
+    <details class="gamelog">
+        <summary>Game log (@Log.Count events)</summary>
+        @foreach (var e in Log.TakeLast(60))
+        {
+            <div class="cnote">@Describe(e)</div>
+        }
+    </details>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<GameEvent> Log { get; set; } = [];
+    [Parameter] public IReadOnlyList<CoachNote>? Notes { get; set; }
+
+    private static string Describe(GameEvent e) => e switch
+    {
+        TileDrawn d => $"seat {d.Seat} draws {d.Tile.Code()}",
+        TileDiscarded d => $"seat {d.Seat} discards {d.Tile.Code()}",
+        MeldExposed m => $"seat {m.Seat} exposes {string.Join(" ", m.Meld.Tiles.Select(t => t.Code()))}",
+        JokerExchanged x => $"seat {x.Seat} swaps {x.Natural.Code()} for a joker (seat {x.MeldOwner})",
+        ClaimMade c => c.Kind is { } k ? $"seat {c.Seat} calls {k}" : $"seat {c.Seat} passes",
+        MahjongDeclared m => $"seat {m.Seat} declares mahjong — {m.Hand.Id}{(m.SelfPicked ? " (self-picked)" : "")}",
+        HandDeclaredDead d => $"seat {d.Seat} is dead — {d.Reason}",
+        PassCompleted p => $"pass {p.Stage}: seat {p.FromSeat} → {p.ToSeat} ({p.Count})",
+        GameEnded g => g.WinnerSeat is { } w ? $"seat {w} wins — {g.Hand?.Id}" : "wall game",
+        _ => null!,
+    };
+}

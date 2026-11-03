@@ -154,3 +154,10 @@ img.tile.back { height: 44px; }
         padding: .45rem .7rem; border-radius: 4px; margin-bottom: .4rem;
         font-size: .85rem; color: #cfe8dc; }
 .warn { color: #ffd867; }
+
+/* ---- review panel ---- */
+.review { margin-top: 1rem; background: #0d1c15; border: 1px solid #24463a;
+          border-radius: 8px; padding: .8rem; font-size: .85rem; }
+.review h4 { margin: 0 0 .4rem; }
+.gamelog { margin-top: .5rem; }
+.gamelog summary { cursor: pointer; color: #9fc4b1; }

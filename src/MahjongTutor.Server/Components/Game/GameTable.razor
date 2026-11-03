@@ -129,6 +129,11 @@
         }
     </div>
     @if (Error != null) { <div class="notice bad">@Error</div> }
+
+    @if (State.Phase == GamePhase.Finished && Log != null)
+    {
+        <ReviewPanel Log="Log" Notes="Notes" />
+    }
 </div>
 
 @code {
@@ -144,6 +149,8 @@
     [Parameter] public EventCallback<ClaimKind?> OnClaim { get; set; }
     [Parameter] public EventCallback OnMahjong { get; set; }
     [Parameter] public EventCallback<(int owner, int meld, Tile natural)> OnExchange { get; set; }
+    [Parameter] public IReadOnlyList<GameEvent>? Log { get; set; }
+    [Parameter] public IReadOnlyList<MahjongTutor.Server.Game.CoachNote>? Notes { get; set; }
 
     private List<Tile> _selected = [];
     private string? _error;

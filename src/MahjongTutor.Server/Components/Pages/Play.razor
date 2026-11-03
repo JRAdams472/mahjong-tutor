@@ -28,7 +28,8 @@ else
                    OnDiscard="t => Act(() => Session.HumanDiscardAsync(t))"
                    OnClaim="k => Act(() => Session.HumanClaimAsync(k))"
                    OnMahjong="() => Act(() => Session.HumanMahjongAsync())"
-                   OnExchange="x => Act(() => Session.HumanExchangeAsync(x.owner, x.meld, x.natural))" />
+                   OnExchange="x => Act(() => Session.HumanExchangeAsync(x.owner, x.meld, x.natural))"
+                   Log="Session.Log" Notes="Session.Notes" />
 
         @* coach panel *@
         <div class="coach">
