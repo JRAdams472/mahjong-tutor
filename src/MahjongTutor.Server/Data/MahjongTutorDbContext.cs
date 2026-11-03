@@ -11,6 +11,7 @@ public sealed class MahjongTutorDbContext(DbContextOptions<MahjongTutorDbContext
     public DbSet<Game> Games => Set<Game>();
     public DbSet<GameMove> GameMoves => Set<GameMove>();
     public DbSet<PlayerStat> PlayerStats => Set<PlayerStat>();
+    public DbSet<SavedGame> SavedGames => Set<SavedGame>();
     public DbSet<TileSetEntity> TileSets => Set<TileSetEntity>();
 
     protected override void OnModelCreating(ModelBuilder b)

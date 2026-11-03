@@ -224,6 +224,30 @@ namespace MahjongTutor.Server.Data.Migrations
                     b.ToTable("Rooms");
                 });
 
+            modelBuilder.Entity("MahjongTutor.Server.Data.SavedGame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Snapshot")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SavedGames");
+                });
+
             modelBuilder.Entity("MahjongTutor.Server.Data.TileSetEntity", b =>
                 {
                     b.Property<int>("Id")

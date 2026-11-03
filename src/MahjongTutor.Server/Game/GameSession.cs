@@ -13,13 +13,27 @@ public sealed record CoachNote(string Severity, string Text);
 /// Scoped per Blazor circuit. Every human action also consults the coach
 /// and records notes (missed calls, suboptimal discards).
 /// </summary>
-public sealed class GameSession(ICardStore cards, StatsStore stats)
+public sealed class GameSession(ICardStore cards, StatsStore stats, SavedGameStore saves)
 {
     public const int HumanSeat = 0;
 
     public GameEngine? Engine { get; private set; }
     public List<GameEvent> Log { get; } = [];
     public List<CoachNote> Notes { get; } = [];
+
+    public async Task<int> SaveAsync(string name) =>
+        await saves.SaveAsync(name, Engine!.State);
+
+    public async Task<bool> LoadAsync(int id)
+    {
+        var card = await cards.GetActiveAsync();
+        if (card == null) return false;
+        var e = await saves.LoadAsync(id, card);
+        if (e == null) return false;
+        Engine = e; Log.Clear(); Notes.Clear(); _recorded = false;
+        await RunBotsAsync();
+        return true;
+    }
 
     public async Task<GameEngine> StartAsync(CancellationToken ct = default)
     {
