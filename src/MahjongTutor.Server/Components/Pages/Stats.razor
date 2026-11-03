@@ -1,0 +1,48 @@
+@page "/stats"
+@using System.Text.Json
+@using MahjongTutor.Server.Game
+@inject StatsStore Svc
+
+<PageTitle>Stats — MahjongTutor</PageTitle>
+
+<h1>Stats &amp; history</h1>
+
+<h2>Players</h2>
+@foreach (var p in _players)
+{
+    <div class="fit"><b>@p.Player.DisplayName</b> — @p.Wins win(s) / @p.GamesPlayed games</div>
+}
+
+<h2>Recent games</h2>
+@foreach (var g in _games)
+{
+    var (names, solo) = Decode(g.Seats);
+    <div class="fit">
+        @g.EndedUtc?.ToLocalTime().ToString("g") — @(solo ? "solo" : "room") game:
+        @string.Join(", ", names.Values)
+        @(g.WinnerSeat is { } w ? $"· winner seat {w} ({names.GetValueOrDefault(w.ToString(), "?")})" : "· wall game")
+    </div>
+}
+
+@code {
+    private List<MahjongTutor.Server.Data.Game> _games = [];
+    private List<MahjongTutor.Server.Data.PlayerStat> _players = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _games = await Svc.RecentAsync();
+        _players = await Svc.LeadersAsync();
+    }
+
+    private static (Dictionary<string, string>, bool) Decode(string json)
+    {
+        try
+        {
+            var d = JsonSerializer.Deserialize<SeatsDto>(json);
+            return (d?.seats ?? [], d?.solo ?? false);
+        }
+        catch { return ([], false); }
+    }
+
+    private sealed record SeatsDto(Dictionary<string, string> seats, bool solo);
+}

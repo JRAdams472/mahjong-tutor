@@ -45,6 +45,7 @@ builder.Services.AddSingleton<MahjongTutor.Server.Tiles.TileSetManager>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.GameSession>();
 builder.Services.AddSingleton<MahjongTutor.Server.Game.RoomManager>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.PlayerSession>();
+builder.Services.AddScoped<MahjongTutor.Server.Game.StatsStore>();
 
 var app = builder.Build();
 
