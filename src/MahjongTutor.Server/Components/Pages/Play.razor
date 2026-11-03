@@ -9,6 +9,7 @@
 @inject SavedGameStore Saves
 @inject OllamaCoach Ollama
 @inject TileSetManager Tiles
+@inject IConfiguration Cfg
 
 <PageTitle>Play — MahjongTutor</PageTitle>
 
@@ -46,7 +47,13 @@ else
         @* coach panel *@
         <div class="coach">
             <h3>Coach</h3>
-            <div class="suggest">@Suggestion(s)</div>
+            <div class="suggest">@Suggestion(s)
+                @if (_piperOn && Engine != null)
+                {
+                    <button class="btn small" @onclick="Speak">🔊 speak</button>
+                    @if (_speakUrl != null) { <audio src="@_speakUrl" autoplay controls style="width:100%;height:28px" /> }
+                }
+            </div>
             @if (Ollama.Enabled)
             {
                 <div class="toolbar">
@@ -100,6 +107,16 @@ else
     private string _saveName = "";
     private string _ask = "";
     private string? _answer;
+    private bool _piperOn;
+    private string? _speakUrl;
+
+    private void Speak()
+    {
+        if (Engine == null) return;
+        var s = Suggestion(Engine.State).Value;
+        var text = System.Text.RegularExpressions.Regex.Replace(s, "<[^>]+>", "");
+        _speakUrl = "/speak?text=" + Uri.EscapeDataString(text);
+    }
 
     private async Task Ask()
     {
@@ -115,8 +132,11 @@ else
     }
     private List<MahjongTutor.Server.Data.SavedGame> _saved = [];
 
-    protected override async Task OnInitializedAsync() =>
+    protected override async Task OnInitializedAsync()
+    {
         _saved = await Saves.ListAsync();
+        _piperOn = !string.IsNullOrEmpty(Cfg["Piper:Url"]);
+    }
 
     private async Task Save()
     {
