@@ -41,7 +41,8 @@ else
                OnDiscard="t => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.Discard(Me.Seat, t)))"
                OnClaim="k => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.Claim(Me.Seat, k)))"
                OnMahjong="() => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.DeclareMahjong(Me.Seat)))"
-               OnExchange="x => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.ExchangeJoker(Me.Seat, x.owner, x.meld, x.natural)))" />
+               OnExchange="x => Act(() => Rooms.ActAsync(room, Me.Seat, e => e.ExchangeJoker(Me.Seat, x.owner, x.meld, x.natural)))"
+               Log="room.Log" />
 }
 
 @code {
