@@ -32,6 +32,15 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+// Card JSON download.
+app.MapGet("/cards/{id:int}/export", async (int id, ICardStore store) =>
+{
+    var json = await store.ExportJsonAsync(id);
+    var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+    return Results.File(bytes, "application/json", $"mahjong-card-{id}.json");
+});
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

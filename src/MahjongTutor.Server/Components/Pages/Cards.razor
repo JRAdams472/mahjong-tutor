@@ -1,0 +1,116 @@
+@page "/cards"
+@using MahjongTutor.Server.Cards
+@inject ICardStore Store
+
+<PageTitle>Cards — MahjongTutor</PageTitle>
+
+<h1>Yearly cards</h1>
+<p class="dim">Enter the NMJL card you own — it stays in your database, nothing is downloaded.</p>
+
+<div class="toolbar">
+    <a class="btn" href="/cards/new">New card</a>
+    <label class="btn">
+        Import JSON
+        <InputFile OnChange="ImportFile" accept=".json,application/json" style="display:none" />
+    </label>
+</div>
+
+@if (_error != null) { <div class="notice bad">@_error</div> }
+@if (_message != null) { <div class="notice ok">@_message</div> }
+
+@if (_cards == null)
+{
+    <p>Loading…</p>
+}
+else if (_cards.Count == 0)
+{
+    <p class="dim">No cards yet. Create one or import a card JSON.</p>
+}
+else
+{
+    <table class="grid">
+        <thead>
+            <tr><th>Year</th><th>Name</th><th>Hands</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var c in _cards)
+            {
+                <tr>
+                    <td>@c.Year</td>
+                    <td>@c.Name</td>
+                    <td>@c.HandCount</td>
+                    <td>@(c.IsActive ? "✔" : "")</td>
+                    <td class="actions">
+                        @if (!c.IsActive)
+                        {
+                            <button class="btn small" @onclick="() => SetActive(c.Id)">Set active</button>
+                        }
+                        <a class="btn small" href="/cards/@c.Id">Edit</a>
+                        <a class="btn small" href="/cards/@c.Id/export" download>Export</a>
+                        @if (_confirmDelete == c.Id)
+                        {
+                            <button class="btn small danger" @onclick="() => Delete(c.Id)">Confirm delete</button>
+                        }
+                        else
+                        {
+                            <button class="btn small" @onclick="() => _confirmDelete = c.Id">Delete</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<CardSummary>? _cards;
+    private string? _error, _message;
+    private int _confirmDelete;
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        _cards = await Store.ListAsync();
+        _confirmDelete = 0;
+    }
+
+    private async Task SetActive(int id)
+    {
+        await Run(async () =>
+        {
+            await Store.SetActiveAsync(id);
+            _message = "Active card updated.";
+            await Reload();
+        });
+    }
+
+    private async Task Delete(int id)
+    {
+        await Run(async () =>
+        {
+            await Store.DeleteAsync(id);
+            _message = "Card deleted.";
+            await Reload();
+        });
+    }
+
+    private async Task ImportFile(InputFileChangeEventArgs e)
+    {
+        await Run(async () =>
+        {
+            using var s = e.File.OpenReadStream(1_000_000);
+            using var r = new StreamReader(s);
+            var id = await Store.ImportJsonAsync(await r.ReadToEndAsync());
+            _message = $"Imported card #{id}.";
+            await Reload();
+        });
+    }
+
+    private async Task Run(Func<Task> action)
+    {
+        _error = _message = null;
+        try { await action(); }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}

@@ -1,0 +1,47 @@
+@using MahjongTutor.Core.Card
+
+<div class="pattern-editor">
+    <input class="pattern-input mono" value="@Value" placeholder="e.g. FF 1111a 2222b 3333c"
+           @oninput="OnInput" spellcheck="false" />
+    @if (_error != null)
+    {
+        <div class="pattern-status bad">@_error</div>
+    }
+    else if (_parsed != null)
+    {
+        <div class="pattern-status @(Complete ? "ok" : "warn")">
+            @_parsed.TileCount / 14 tiles — @_parsed.ToString()
+        </div>
+    }
+    else
+    {
+        <div class="pattern-status dim">Enter groups of tiles, separated by spaces.</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private ParsedPattern? _parsed;
+    private string? _error;
+    private bool Complete => _parsed?.TileCount == 14;
+
+    protected override void OnParametersSet() => Reparse();
+
+    private void Reparse()
+    {
+        _error = null;
+        _parsed = null;
+        if (string.IsNullOrWhiteSpace(Value)) return;
+        try { _parsed = CardPatternParser.Parse(Value); }
+        catch (PatternParseException e) { _error = e.Message; }
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString() ?? "";
+        Reparse();
+        await ValueChanged.InvokeAsync(Value);
+    }
+}
