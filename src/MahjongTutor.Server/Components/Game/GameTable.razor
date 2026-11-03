@@ -1,6 +1,8 @@
 @using MahjongTutor.Core.Bots
 @using MahjongTutor.Core.Rules
 @using MahjongTutor.Core.Tiles
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 @* Shared table view for solo + multiplayer. Actions surface as callbacks. *@
 <div class="table">
@@ -163,7 +165,7 @@
     private async Task Act(Func<Task> action)
     {
         _error = null;
-        try { await action(); _selected.Clear(); }
+        try { await action(); _selected.Clear(); await JS.InvokeVoidAsync("playClack"); }
         catch (Exception ex) { _error = ex.Message; }
     }
 
