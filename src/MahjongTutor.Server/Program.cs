@@ -47,6 +47,8 @@ builder.Services.AddSingleton<MahjongTutor.Server.Game.RoomManager>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.PlayerSession>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.StatsStore>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.SavedGameStore>();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<MahjongTutor.Server.Game.OllamaCoach>();
 
 var app = builder.Build();
 

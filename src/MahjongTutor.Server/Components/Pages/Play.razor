@@ -7,6 +7,7 @@
 @using MahjongTutor.Server.Tiles
 @inject GameSession Session
 @inject SavedGameStore Saves
+@inject OllamaCoach Ollama
 @inject TileSetManager Tiles
 
 <PageTitle>Play — MahjongTutor</PageTitle>
@@ -46,6 +47,14 @@ else
         <div class="coach">
             <h3>Coach</h3>
             <div class="suggest">@Suggestion(s)</div>
+            @if (Ollama.Enabled)
+            {
+                <div class="toolbar">
+                    <input class="input grow" placeholder="ask the coach…" @bind="_ask" />
+                    <button class="btn small" @onclick="Ask">Ask</button>
+                </div>
+                @if (_answer != null) { <div class="cnote">@_answer</div> }
+            }
             <h4>Best targets</h4>
             @foreach (var f in CoachBrain.TopFits(s, 0, 3))
             {
@@ -89,6 +98,21 @@ else
     private GameEngine? Engine;
     private string? _error;
     private string _saveName = "";
+    private string _ask = "";
+    private string? _answer;
+
+    private async Task Ask()
+    {
+        if (Engine == null) return;
+        var s = Engine.State;
+        var ctx = $"My tiles: {Codes(s.Seats[0].Concealed.ToList())}.\n" +
+                  $"Exposures: {string.Join(" | ", s.Seats[0].Exposures.Select(m => Codes(m.Tiles)))}.\n" +
+                  $"Coach's current advice: {Suggestion(s).Value}.\n" +
+                  $"Best fits: {string.Join("; ", CoachBrain.TopFits(s, 0, 3).Select(f => $"{f.Hand.Id} ({f.TilesNeeded} out)"))}.";
+        _answer = "…";
+        _answer = await Ollama.AskAsync(ctx, string.IsNullOrWhiteSpace(_ask) ? "what should I do?" : _ask);
+        _ask = "";
+    }
     private List<MahjongTutor.Server.Data.SavedGame> _saved = [];
 
     protected override async Task OnInitializedAsync() =>
