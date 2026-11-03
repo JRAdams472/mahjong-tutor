@@ -13,6 +13,8 @@ services:
       Seq__ServerUrl: http://seq:5341
       Otel__Endpoint: http://jaeger:4317
       TILESET_DIR: /app/user-tiles
+      Ollama__Url: http://ollama:11434
+      Ollama__Model: ${OLLAMA_MODEL:-llama3.2}
     volumes:
       - tilesets:/app/user-tiles
     depends_on:
@@ -65,7 +67,20 @@ services:
       - "4318:4318"     # OTLP HTTP
     restart: unless-stopped
 
+  # Optional local LLM for "Ask coach" — opt-in profile:
+  #   docker compose --profile ai up -d
+  #   docker exec -it mahjongtutor-ollama-1 ollama pull llama3.2
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ai"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
 volumes:
   pgdata:
   seqdata:
   tilesets:
+  ollama:
