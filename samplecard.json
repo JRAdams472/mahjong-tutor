@@ -1,0 +1,33 @@
+{
+  "year": 2099,
+  "name": "Synthetic Test Card",
+  "categories": [
+    { "name": "Like Numbers", "hands": [
+      { "id": "LN1", "points": 30, "pattern": "FF XXXX0a XXXX0b DDDDc" }
+    ]},
+    { "name": "Consecutive Run", "hands": [
+      { "id": "RUN1", "points": 25, "pattern": "11a 222a 3333a 444a 55a" },
+      { "id": "RUN2", "points": 30, "pattern": "FFF XX0a XX1a XXX2a XXXX3a" },
+      { "id": "RUN3", "points": 45, "concealed": true, "pattern": "FF X0a XX1a XXX2a X0b XX1b XXX2b" }
+    ]},
+    { "name": "Quints", "hands": [
+      { "id": "QUINT1", "points": 40, "pattern": "FF XXXXX0a XXX0b XXXX0c" }
+    ]},
+    { "name": "2468", "hands": [
+      { "id": "EVEN1", "points": 25, "pattern": "2222a 4444a 66b 8888b" }
+    ]},
+    { "name": "Winds-Dragons", "hands": [
+      { "id": "WD1", "points": 25, "pattern": "NNNN EEE WWW SSSS" },
+      { "id": "NEWS1", "points": 30, "pattern": "FFF N E W S 2222a 222a" }
+    ]},
+    { "name": "Year", "hands": [
+      { "id": "YEAR1", "points": 25, "pattern": "NN EE WW SSSS 2025a" }
+    ]},
+    { "name": "Alt", "hands": [
+      { "id": "ALT1", "points": 35, "pattern": "FF XXXX0a NNNN|EEEE XXXX1a" }
+    ]},
+    { "name": "13579", "hands": [
+      { "id": "ODD1", "points": 25, "pattern": "11a 333a 5555a 777a 99a" }
+    ]}
+  ]
+}
