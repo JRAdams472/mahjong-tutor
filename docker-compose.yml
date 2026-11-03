@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: src/MahjongTutor.Server/Dockerfile
+    ports:
+      # Bound on all interfaces so other machines on the LAN can reach it:
+      #   http://<host-LAN-IP>:8420  (override with APP_PORT)
+      - "${APP_PORT:-8420}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=mahjongtutor;Username=mahjong;Password=${POSTGRES_PASSWORD:-mahjong}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: mahjongtutor
+      POSTGRES_USER: mahjong
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mahjong}
+    ports:
+      # Exposed for `dotnet ef` migrations and DB tools during development.
+      # Nonstandard host port avoids colliding with any local Postgres install.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mahjong -d mahjongtutor"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:
