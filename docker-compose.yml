@@ -12,6 +12,9 @@ services:
       ConnectionStrings__Default: Host=postgres;Port=5432;Database=mahjongtutor;Username=mahjong;Password=${POSTGRES_PASSWORD:-mahjong}
       Seq__ServerUrl: http://seq:5341
       Otel__Endpoint: http://jaeger:4317
+      TILESET_DIR: /app/user-tiles
+    volumes:
+      - tilesets:/app/user-tiles
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,3 +68,4 @@ services:
 volumes:
   pgdata:
   seqdata:
+  tilesets:

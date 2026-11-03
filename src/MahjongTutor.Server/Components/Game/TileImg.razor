@@ -2,7 +2,7 @@
 @using MahjongTutor.Server.Tiles
 @inject TileSetManager Tiles
 
-<img class="tile @Class" src="@Tiles.TilePath(TileKind, "default", Variant)"
+<img class="tile @Class" src="@Tiles.TilePath(TileKind, null, Variant)"
      title="@TileKind.Code()" draggable="false" />
 
 @code {
