@@ -1,0 +1,41 @@
+## .NET / Visual Studio
+bin/
+obj/
+*.user
+.vs/
+.vscode/
+TestResults/
+artifacts/
+publish/
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider
+.idea/
+
+## Build outputs
+[Dd]ebug/
+[Rr]elease/
+dist/
+
+## OS junk
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Local secrets / env
+*.env
+.env
+.env.*
+!.env.example
+
+## Runtime data (local dev)
+data/
+uploads/
+
+## Coverage
+coverage.*
+*.coverage
+*.coveragexml
+coverlet.runsettings
