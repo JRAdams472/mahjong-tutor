@@ -131,3 +131,20 @@ img.tile.back { height: 44px; }
 .actions { display: flex; gap: .6rem; align-items: center; margin-top: .6rem; }
 .pending { display: flex; align-items: center; gap: .5rem; }
 .status { margin-bottom: .6rem; font-size: .95rem; }
+
+/* ---- coach panel ---- */
+.playgrid { display: grid; grid-template-columns: 1fr 300px; gap: 1.2rem; }
+.coach { background: #0d1c15; border: 1px solid #24463a; border-radius: 8px;
+         padding: .8rem; font-size: .85rem; }
+.coach h3 { margin: 0 0 .4rem; }
+.coach h4 { margin: .7rem 0 .3rem; font-size: .8rem; color: #9fc4b1; }
+.coach .suggest { background: #163024; border-left: 3px solid #ffd867;
+                  padding: .45rem .6rem; border-radius: 4px; }
+.fit { padding: .3rem 0; border-bottom: 1px dashed #1d3a2d; }
+.fit.dead { opacity: .45; }
+.fit .missing { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+.fit .missing img.tile { height: 26px; margin: 0; }
+.chip { background: #1d3a2d; border-radius: 8px; padding: 1px 6px; font-size: .7rem; }
+.cnote { padding: .3rem 0; border-bottom: 1px dashed #1d3a2d; }
+.cnote.miss { color: #ffb4a2; }
+.cnote.warn { color: #ffd867; }

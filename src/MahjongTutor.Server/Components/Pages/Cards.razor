@@ -9,6 +9,7 @@
 
 <div class="toolbar">
     <a class="btn" href="/cards/new">New card</a>
+    <button class="btn" @onclick="LoadSample">Load sample card</button>
     <label class="btn">
         Import JSON
         <InputFile OnChange="ImportFile" accept=".json,application/json" style="display:none" />
@@ -91,6 +92,16 @@ else
         {
             await Store.DeleteAsync(id);
             _message = "Card deleted.";
+            await Reload();
+        });
+    }
+
+    private async Task LoadSample()
+    {
+        await Run(async () =>
+        {
+            var id = await Store.ImportJsonAsync(SampleCards.Test);
+            _message = $"Loaded the sample practice card (#{id}).";
             await Reload();
         });
     }
