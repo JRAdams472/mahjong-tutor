@@ -13,6 +13,8 @@ var connString = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddDbContextFactory<MahjongTutorDbContext>(
     o => o.UseNpgsql(connString));
 builder.Services.AddScoped<ICardStore, CardStore>();
+builder.Services.AddSingleton<MahjongTutor.Server.Tiles.TileSetManager>();
+builder.Services.AddScoped<MahjongTutor.Server.Game.GameSession>();
 
 var app = builder.Build();
 

@@ -1,0 +1,180 @@
+@page "/play"
+@using MahjongTutor.Core.Rules
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Game
+@using MahjongTutor.Server.Tiles
+@inject GameSession Session
+@inject TileSetManager Tiles
+
+<PageTitle>Play — MahjongTutor</PageTitle>
+
+@if (Engine == null)
+{
+    <h1>Play vs bots</h1>
+    <button class="btn primary" @onclick="Start">New game</button>
+    @if (_error != null) { <div class="notice bad">@_error</div> }
+}
+else
+{
+    var s = Engine.State;
+    <div class="table">
+        <div class="status">
+            @if (s.Phase == GamePhase.Finished)
+            {
+                <span class="notice ok">
+                    Game over — @(s.WinnerSeat is { } w ? $"seat {w} won with {s.WinningHand?.Id} ({s.WinningHand?.Points} pts)" : "wall game")
+                </span>
+            }
+            else if (s.Phase == GamePhase.Charleston)
+            {
+                <span>Charleston: @s.CharlestonStage</span>
+            }
+            else
+            {
+                <span>Turn: seat @s.CurrentSeat (@s.Stage) — wall @s.WallRemaining</span>
+            }
+        </div>
+
+        @* opponents *@
+        <div class="opponents">
+            @for (var i = 1; i < 4; i++)
+            {
+                var seat = s.Seats[i];
+                <div class="opp">
+                    <div class="opp-name">Seat @i @(seat.Dead ? "(dead)" : s.CurrentSeat == i ? "◀" : "")</div>
+                    <div class="opp-rack">
+                        @for (var k = 0; k < seat.Concealed.Total; k++)
+                        {
+                            <img class="tile back" src="tiles/default/back.svg" />
+                        }
+                    </div>
+                    <div class="exposures">
+                        @foreach (var m in seat.Exposures)
+                        {
+                            foreach (var t in m.Tiles) { <TileImg TileKind="t" /> }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* discard pools *@
+        <div class="pools">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="pool">
+                    @foreach (var t in s.Seats[i].Discards) { <TileImg TileKind="t" /> }
+                </div>
+            }
+        </div>
+
+        @* pending discard *@
+        @if (s.PendingDiscard is { } pd)
+        {
+            <div class="pending">Callable: <TileImg TileKind="pd" /></div>
+        }
+
+        @* my rack *@
+        <div class="myrack">
+            @foreach (var t in SortedRack())
+            {
+                var tt = t;
+                <span class="@TileClass(tt)" @onclick="() => TileClicked(tt)">
+                    <TileImg TileKind="tt" />
+                </span>
+            }
+        </div>
+
+        @* action bar *@
+        <div class="actions">
+            @if (s.Phase == GamePhase.Charleston)
+            {
+                if (s.CharlestonStage != CharlestonStage.Vote && s.CharlestonStage != CharlestonStage.Done
+                    && !s.PendingPasses.ContainsKey(0))
+                {
+                    <span>Pick 3 tiles (selected @_selected.Count)</span>
+                    <button class="btn primary" disabled="@(_selected.Count != 3)"
+                            @onclick="() => Act(e => s.CharlestonStage == CharlestonStage.Courtesy
+                                ? e.SubmitCourtesy(0, _selected) : e.SubmitPass(0, _selected))">
+                        Pass
+                    </button>
+                }
+                else if (s.CharlestonStage == CharlestonStage.Vote && !s.PendingVotes.ContainsKey(0))
+                {
+                    <span>Second Charleston?</span>
+                    <button class="btn" @onclick="() => Act(e => e.Vote(0, true))">Go again</button>
+                    <button class="btn" @onclick="() => Act(e => e.Vote(0, false))">Stop</button>
+                }
+            }
+            else if (s.Phase == GamePhase.Play && s.CurrentSeat == 0)
+            {
+                if (s.Stage == TurnStage.AwaitDraw)
+                {
+                    <button class="btn primary" @onclick="() => Act(e => e.Draw(0))">Draw</button>
+                }
+                else if (s.Stage == TurnStage.AwaitDiscard)
+                {
+                    <span>Click a tile to discard</span>
+                    <button class="btn" @onclick="() => Act(e => e.DeclareMahjong(0))">Mahjong!</button>
+                }
+            }
+            @if (s.Stage == TurnStage.CallWindow && s.PendingOptions.TryGetValue(0, out var opts)
+                 && !s.PendingResponded.Contains(0))
+            {
+                @foreach (var k in opts)
+                {
+                    var kk = k;
+                    <button class="btn" @onclick="() => Act(e => e.Claim(0, kk))">@k</button>
+                }
+                <button class="btn" @onclick="() => Act(e => e.Claim(0, ClaimKind.Mahjong))">Mahjong!</button>
+                <button class="btn primary" @onclick="() => Act(e => e.Claim(0, null))">Pass</button>
+            }
+        </div>
+        @if (_error != null) { <div class="notice bad">@_error</div> }
+    </div>
+}
+
+@code {
+    private GameEngine? Engine;
+    private string? _error;
+    private List<Tile> _selected = [];
+
+    private async Task Start()
+    {
+        _error = null;
+        try { Engine = await Session.StartAsync(); }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private List<Tile> SortedRack() =>
+        Engine!.State.Seats[0].Concealed.ToList();
+
+    private string TileClass(Tile t) =>
+        _selected.Contains(t) ? "sel" : "";
+
+    private async Task TileClicked(Tile t)
+    {
+        var s = Engine!.State;
+        if (s.Phase == GamePhase.Charleston)
+        {
+            if (_selected.Contains(t)) _selected.Remove(t);
+            else if (_selected.Count < 3) _selected.Add(t);
+        }
+        else if (s.Phase == GamePhase.Play && s.Stage == TurnStage.AwaitDiscard
+                 && s.CurrentSeat == 0)
+        {
+            await Act(e => e.Discard(0, t));
+        }
+    }
+
+    private async Task Act(Func<GameEngine, IReadOnlyList<GameEvent>> action)
+    {
+        _error = null;
+        try
+        {
+            await Session.ActAsync(action);
+            _selected.Clear();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}
