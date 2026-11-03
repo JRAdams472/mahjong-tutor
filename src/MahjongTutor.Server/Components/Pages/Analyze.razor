@@ -1,0 +1,71 @@
+@page "/analyze"
+@using MahjongTutor.Core.Card
+@using MahjongTutor.Core.Coach
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Cards
+@inject ICardStore Store
+
+<PageTitle>Analyze — MahjongTutor</PageTitle>
+
+<h1>Rack analyzer</h1>
+<p class="dim">Paste a rack (e.g. <code>1d 2d 2d 3d 5b 5b N E W F J J J</code>) to see how it fits the active card.</p>
+
+<div class="toolbar">
+    <input class="input grow" placeholder="tile codes, space-separated" @bind="_input" />
+    <button class="btn primary" @onclick="Run">Analyze</button>
+</div>
+@if (_error != null) { <div class="notice bad">@_error</div> }
+@if (_card == null) { <div class="notice bad">No active card — enter one under Cards.</div> }
+
+@if (_fits != null)
+{
+    <h2>Best fits (@_count tiles)</h2>
+    @foreach (var f in _fits)
+    {
+        <div class="fit @(f.Viable ? "" : "dead")">
+            <b>@f.Hand.Id</b> · @f.Hand.Points pts · @(f.IsMahjong ? "MAHJONG!" : $"{f.TilesNeeded} out") · @f.JokersUsed joker(s)
+            <div class="missing">
+                needs:
+                @foreach (var t in f.Missing) { <TileImg TileKind="t" /> }
+                @foreach (var r in f.MissingAnySuit) { <span class="chip">any @r</span> }
+            </div>
+        </div>
+    }
+
+    <h2>Discard grades</h2>
+    @foreach (var g in _grades!)
+    {
+        <div class="fit">
+            <TileImg TileKind="g.Tile" /> <b>@g.Tile.Code()</b> — leaves you @g.NeedAfter out
+            @(g.Delta == 0 ? "· best play" : $"· +{g.Delta} worse")
+        </div>
+    }
+}
+
+@code {
+    private MahjongCard? _card;
+    private string _input = "";
+    private string? _error;
+    private List<HandFit>? _fits;
+    private List<CoachBrain.DiscardGrade>? _grades;
+    private int _count;
+
+    protected override async Task OnInitializedAsync() =>
+        _card = await Store.GetActiveAsync();
+
+    private void Run()
+    {
+        _error = null; _fits = null; _grades = null;
+        if (_card == null) { _error = "No active card — enter one under Cards."; return; }
+        try
+        {
+            var rack = TileBag.Parse(_input);
+            _count = rack.Total;
+            _fits = CardMatcher.Analyze(rack, _card)
+                .OrderBy(f => !f.Viable).ThenBy(f => f.TilesNeeded).ThenBy(f => f.JokersUsed)
+                .Take(6).ToList();
+            _grades = CoachBrain.GradeRack(rack, _card);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}
