@@ -70,6 +70,18 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 
 // Card JSON download.
+// Piper TTS proxy: GET /speak?text=... → WAV audio (Piper__Url required).
+app.MapGet("/speak", async (string text, IHttpClientFactory http, IConfiguration cfg) =>
+{
+    var url = cfg["Piper:Url"];
+    if (string.IsNullOrEmpty(url) || string.IsNullOrWhiteSpace(text)) return Results.NotFound();
+    var res = await http.CreateClient().PostAsync(url,
+        new StringContent(System.Text.Json.JsonSerializer.Serialize(new { text }),
+            System.Text.Encoding.UTF8, "application/json"));
+    if (!res.IsSuccessStatusCode) return Results.Problem("piper unreachable");
+    return Results.Stream(await res.Content.ReadAsStreamAsync(), "audio/wav");
+});
+
 // Serve uploaded tile-set files from the writable tileset dir.
 app.MapGet("/tilefile/{set}/{file}",
     (string set, string file, MahjongTutor.Server.Tiles.TileSetManager tiles) =>
