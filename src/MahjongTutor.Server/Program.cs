@@ -66,6 +66,16 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 
 // Card JSON download.
+// Serve uploaded tile-set files from the writable tileset dir.
+app.MapGet("/tilefile/{set}/{file}",
+    (string set, string file, MahjongTutor.Server.Tiles.TileSetManager tiles) =>
+    {
+        var path = tiles.UserFile(set, file);
+        if (path == null || file.Contains('/') || file.Contains("..")) return Results.NotFound();
+        var ct = file.EndsWith(".png") ? "image/png" : "image/svg+xml";
+        return Results.File(path, ct);
+    });
+
 app.MapGet("/cards/{id:int}/export", async (int id, ICardStore store) =>
 {
     var json = await store.ExportJsonAsync(id);

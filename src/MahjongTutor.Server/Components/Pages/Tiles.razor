@@ -1,0 +1,73 @@
+@page "/tiles"
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Tiles
+@inject TileSetManager Mgr
+
+<PageTitle>Tile sets — MahjongTutor</PageTitle>
+
+<h1>Tile sets</h1>
+<p class="dim">A set is a folder of images keyed d1-9, b1-9, c1-9, wn/we/ws/ww, dr/dg/dw, f1-8, j, back (SVG or PNG).</p>
+
+<h2>Installed</h2>
+@foreach (var s in Mgr.ListSets())
+{
+    <div class="fit">
+        <b>@s</b> @(s == Mgr.CurrentSet ? "· active" : "")
+        <button class="btn small" @onclick="() => Mgr.CurrentSet = s"
+                disabled="@(s == Mgr.CurrentSet)">Use</button>
+        <div class="missing">
+            @foreach (var t in Preview())
+            {
+                <img class="tile" src="@Mgr.TilePath(t, s)" />
+            }
+        </div>
+    </div>
+}
+
+<h2>Upload</h2>
+<div class="toolbar">
+    <input class="input" placeholder="set name (e.g. fancy)" @bind="_name" />
+    <label class="btn">
+        Add images
+        <InputFile OnChange="Upload" multiple accept=".svg,.png" style="display:none" />
+    </label>
+</div>
+<p class="dim">Select all the tile images — every key must be present for the set to activate.</p>
+@if (_msg != null) { <div class="notice ok">@_msg</div> }
+@if (_err != null) { <div class="notice bad">@_err</div> }
+
+@code {
+    private string _name = "";
+    private string? _msg, _err;
+
+    private static IEnumerable<Tile> Preview() =>
+        [Tile.D1, Tile.D5, Tile.B3, Tile.C9, Tile.WE, Tile.DR, Tile.DG, Tile.DW, Tile.F, Tile.J];
+
+    private async Task Upload(InputFileChangeEventArgs e)
+    {
+        _err = _msg = null;
+        var name = string.Concat(_name.Trim().Where(c => char.IsLetterOrDigit(c) || c is '-' or '_'));
+        if (name.Length == 0) { _err = "Give the set a name first."; return; }
+        try
+        {
+            var dir = Path.Combine(Mgr.UserDir, name);
+            Directory.CreateDirectory(dir);
+            var count = 0;
+            foreach (var f in e.GetMultipleFiles(60))
+            {
+                var key = Path.GetFileNameWithoutExtension(f.Name).ToLowerInvariant();
+                var ext = Path.GetExtension(f.Name).ToLowerInvariant();
+                if (ext is not (".svg" or ".png") || !TileSetManager.Keys.Contains(key)) continue;
+                await using var w = File.Create(Path.Combine(dir, key + ext));
+                await f.OpenReadStream(5_000_000).CopyToAsync(w);
+                count++;
+            }
+            var valid = TileSetManager.IsValidSet(dir);
+            _msg = valid ? $"Saved {count} files — '{name}' is ready." :
+                          $"Saved {count} files but the set is incomplete (need all keys).";
+            if (!valid) _err = $"Missing: {string.Join(", ", TileSetManager.Keys.Where(k =>
+                !File.Exists(Path.Combine(dir, k + ".svg")) && !File.Exists(Path.Combine(dir, k + ".png"))))}";
+        }
+        catch (Exception ex) { _err = ex.Message; }
+    }
+}
