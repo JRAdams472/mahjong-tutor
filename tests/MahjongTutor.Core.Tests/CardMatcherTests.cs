@@ -148,4 +148,15 @@ public class CardMatcherTests
         Assert.True(fit.IsMahjong);
         Assert.True(fit.Hand.Concealed);
     }
+
+    [Fact]
+    public void Analyze_with_exposure_skips_concealed_hands()
+    {
+        // Regression: concealed hands + exposures used to spin the option
+        // enumerator forever (continue skipped the index advance).
+        var rack = TileBag.Parse("1b 2b 3b 4b 5b 6b 7b 8b 9b N E");
+        var exposed = new List<IReadOnlyList<Tile>> { new List<Tile> { Tile.D5, Tile.D5, Tile.D5 } };
+        var fits = CardMatcher.Analyze(rack, TestCards.Card, exposedGroups: exposed);
+        Assert.DoesNotContain(fits, f => f.Hand.Concealed);
+    }
 }
