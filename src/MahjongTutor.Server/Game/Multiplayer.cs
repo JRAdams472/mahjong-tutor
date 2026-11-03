@@ -32,7 +32,7 @@ public sealed class Room
 /// LAN multiplayer: name + room code, up to 4 humans, bots fill the rest.
 /// Singleton; each circuit subscribes to <see cref="Changed"/> to re-render.
 /// </summary>
-public sealed class RoomManager(ICardStore cards, StatsStore stats)
+public sealed class RoomManager(IServiceProvider sp)
 {
     private readonly ConcurrentDictionary<string, Room> _rooms = new();
     public event Action? Changed;
@@ -61,7 +61,7 @@ public sealed class RoomManager(ICardStore cards, StatsStore stats)
 
     public async Task<bool> StartAsync(Room room)
     {
-        var card = await cards.GetActiveAsync();
+        var card = await WithScope<ICardStore, MahjongTutor.Core.Card.MahjongCard?>(c => c.GetActiveAsync());
         if (card == null) return false;
         room.Engine = new GameEngine(card, seed: Random.Shared.Next());
         Fire();
@@ -96,8 +96,21 @@ public sealed class RoomManager(ICardStore cards, StatsStore stats)
         if (!room.Recorded && e.State.Phase == GamePhase.Finished)
         {
             room.Recorded = true;
-            await stats.RecordFinishedAsync(e.State, room.SeatNames, room.Log, solo: false);
+            await WithScope<StatsStore>(x =>
+                x.RecordFinishedAsync(e.State, room.SeatNames, room.Log, solo: false));
         }
+    }
+
+    private async Task<TResult> WithScope<TSvc, TResult>(Func<TSvc, Task<TResult>> fn) where TSvc : notnull
+    {
+        await using var scope = sp.CreateAsyncScope();
+        return await fn(scope.ServiceProvider.GetRequiredService<TSvc>());
+    }
+
+    private async Task WithScope<TSvc>(Func<TSvc, Task> fn) where TSvc : notnull
+    {
+        await using var scope = sp.CreateAsyncScope();
+        await fn(scope.ServiceProvider.GetRequiredService<TSvc>());
     }
 
     private void Fire() => Changed?.Invoke();
