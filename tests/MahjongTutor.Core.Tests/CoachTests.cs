@@ -27,7 +27,7 @@ public class CoachTests
         return e;
     }
 
-    private static void SetHand(GameEngine e, int seat, string codes)
+    internal static void SetHand(GameEngine e, int seat, string codes)
     {
         var bag = e.State.Seats[seat].Concealed;
         foreach (var t in TileKinds.All) bag[t] = 0;
@@ -99,5 +99,88 @@ public class CoachTests
         var note = CoachBrain.DiscardNote(e.State, 0, Tile.D1);       // throws away the pair
         Assert.NotNull(note);
         Assert.Contains("9c", note);
+    }
+}
+
+public class DefenseTests
+{
+    private static GameEngine PlayGame(int seed = 42)
+    {
+        var e = new GameEngine(TestCards.Card, seed, 0);
+        while (e.State.Phase == GamePhase.Charleston)
+        {
+            switch (e.State.CharlestonStage)
+            {
+                case CharlestonStage.Vote:
+                    for (var s = 0; s < 4; s++) e.Vote(s, false); break;
+                case CharlestonStage.Courtesy:
+                    for (var s = 0; s < 4; s++) e.SubmitCourtesy(s, []); break;
+                default:
+                    for (var s = 0; s < 4; s++)
+                        e.SubmitPass(s, e.State.Seats[s].Concealed.ToList().Take(3).ToList());
+                    break;
+            }
+        }
+        return e;
+    }
+
+    [Fact]
+    public void Reads_identifies_opponent_from_exposures()
+    {
+        var e = PlayGame();
+        CoachTests.SetHand(e, 0, "1d 2d 3d 4d 5d 6d 7d 8d 9d N E W F");
+        // seat 2 has exposed two kongs of even dots — smells like 2468
+        e.State.Seats[2].Exposures.Add(new Meld(
+            [Tile.D2, Tile.D2, Tile.D2, Tile.D2], true));
+        e.State.Seats[2].Exposures.Add(new Meld(
+            [Tile.D4, Tile.D4, Tile.D4, Tile.D4], true));
+        var reads = Defense.Reads(e.State, 0);
+        var read = Assert.Single(reads, r => r.Seat == 2);
+        Assert.Contains(read.Likely, h => h.Id == "EVEN1");
+    }
+
+    [Fact]
+    public void Reads_empty_before_any_exposures()
+    {
+        var e = PlayGame();
+        Assert.Empty(Defense.Reads(e.State, 0));
+    }
+
+    [Fact]
+    public void Evaluate_flags_tile_needed_by_opponent()
+    {
+        var e = PlayGame();
+        e.State.Seats[1].Exposures.Add(new Meld(
+            [Tile.D2, Tile.D2, Tile.D2, Tile.D2], true));
+        e.State.Seats[1].Exposures.Add(new Meld(
+            [Tile.D4, Tile.D4, Tile.D4, Tile.D4], true));
+        // EVEN1 candidate still wants 6b/8b � an 8-bam discard is live
+        var d = Defense.Evaluate(e.State, 0, Tile.B8);
+        Assert.NotNull(d);
+        Assert.Contains(1, d!.Callers);
+    }
+
+    [Fact]
+    public void Evaluate_null_for_dead_discards()
+    {
+        var e = PlayGame();
+        Assert.Null(Defense.Evaluate(e.State, 0, Tile.J));
+        Assert.Null(Defense.Evaluate(e.State, 0, Tile.F));
+    }
+
+    [Fact]
+    public void CouldWin_when_one_tile_short()
+    {
+        var e = PlayGame();
+        // seat 3: three kongs covering 12 of EVEN1's 14 slots � one 6b pair away
+        e.State.Seats[3].Exposures.Add(new Meld(
+            [Tile.D2, Tile.D2, Tile.D2, Tile.D2], true));
+        e.State.Seats[3].Exposures.Add(new Meld(
+            [Tile.D4, Tile.D4, Tile.D4, Tile.D4], true));
+        e.State.Seats[3].Exposures.Add(new Meld(
+            [Tile.B8, Tile.B8, Tile.B8, Tile.B8], true));
+        var d = Defense.Evaluate(e.State, 0, Tile.B6);
+        Assert.NotNull(d);
+        Assert.True(d!.CouldWin);
     }
 }

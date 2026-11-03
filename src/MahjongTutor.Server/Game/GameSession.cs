@@ -49,6 +49,7 @@ public sealed class GameSession(ICardStore cards)
     public async Task HumanDiscardAsync(Tile tile)
     {
         Note(CoachBrain.DiscardNote(Engine!.State, 0, tile), "miss");
+        Note(Defense.DangerNote(Engine!.State, 0, tile), "warn");
         await Act(e => e.Discard(0, tile));
     }
 
