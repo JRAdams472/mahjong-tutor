@@ -53,6 +53,28 @@ public static class CoachBrain
         return grades.Select(g => g with { Delta = g.NeedAfter - min }).ToList();
     }
 
+    /// <summary>Rack-level grader for the standalone analyzer: same scoring as
+    /// <see cref="GradeDiscards"/> but on a bare rack + card.</summary>
+    public static List<DiscardGrade> GradeRack(TileBag rack, MahjongCard card, TileBag? pool = null)
+    {
+        var fits = CardMatcher.Analyze(rack, card, pool);
+        var topHands = fits.Where(f => f.Viable).Take(2).Select(f => f.Hand).ToList();
+        if (topHands.Count == 0) topHands = fits.Take(2).Select(f => f.Hand).ToList();
+        var grades = rack.ToList()
+            .GroupBy(t => t)
+            .Select(g =>
+            {
+                var r = rack.Clone();
+                r.Remove(g.Key);
+                var need = topHands.Count == 0 ? 0
+                    : topHands.Select(h => CardMatcher.BestFit(r, h, pool)?.TilesNeeded ?? 14).Min();
+                return new DiscardGrade(g.Key, need, 0);
+            })
+            .OrderBy(g => g.NeedAfter).ToList();
+        var min = grades.FirstOrDefault()?.NeedAfter ?? 0;
+        return grades.Select(g => g with { Delta = g.NeedAfter - min }).ToList();
+    }
+
     /// <summary>The n tiles the coach would pass/discard right now.</summary>
     public static List<Tile> SuggestPass(GameState s, int seat, int n = 3)
     {
