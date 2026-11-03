@@ -30,7 +30,7 @@ else
                 }
                 else if (s.Phase == GamePhase.Charleston)
                 {
-                    <span>Charleston: @s.CharlestonStage</span>
+                    <span>Charleston — @CharlestonLabel(s.CharlestonStage)</span>
                 }
                 else
                 {
@@ -92,6 +92,7 @@ else
             <div class="actions">
                 @if (s.Phase == GamePhase.Charleston)
                 {
+                    <div class="hint">@CharlestonHint(s)</div>
                     if (s.CharlestonStage == CharlestonStage.Courtesy && !s.PendingPasses.ContainsKey(0))
                     {
                         <span>Courtesy: pick 0–3 (selected @_selected.Count)</span>
@@ -101,15 +102,21 @@ else
                     else if (s.CharlestonStage != CharlestonStage.Vote && s.CharlestonStage != CharlestonStage.Done
                              && !s.PendingPasses.ContainsKey(0))
                     {
-                        <span>Pick 3 tiles (selected @_selected.Count)</span>
+                        <span><b>Click 3 tiles</b> in your rack to select them (selected @_selected.Count), then:</span>
                         <button class="btn primary" disabled="@(_selected.Count != 3)"
-                                @onclick="() => Act(() => Session.HumanPassAsync(_selected))">Pass</button>
+                                @onclick="() => Act(() => Session.HumanPassAsync(_selected))">
+                            Pass @PassDirection(s.CharlestonStage)
+                        </button>
                     }
                     else if (s.CharlestonStage == CharlestonStage.Vote && !s.PendingVotes.ContainsKey(0))
                     {
                         <span>Second Charleston?</span>
                         <button class="btn" @onclick="() => Act(() => Session.HumanVoteAsync(true))">Go again</button>
                         <button class="btn" @onclick="() => Act(() => Session.HumanVoteAsync(false))">Stop</button>
+                    }
+                    else
+                    {
+                        <span class="dim">Waiting for the other players…</span>
                     }
                 }
                 else if (s.Phase == GamePhase.Play && s.CurrentSeat == 0)
@@ -215,6 +222,43 @@ else
 
     private static string Codes(IEnumerable<Tile> ts) =>
         string.Join(" ", ts.Select(t => t.Code()));
+
+    private static string CharlestonLabel(CharlestonStage c) => c switch
+    {
+        CharlestonStage.PassRight => "first pass — to the right",
+        CharlestonStage.PassAcross => "first pass — across the table",
+        CharlestonStage.PassLeft => "first pass — to the left",
+        CharlestonStage.Vote => "vote on a second Charleston",
+        CharlestonStage.SecondLeft => "second pass — to the left",
+        CharlestonStage.SecondAcross => "second pass — across the table",
+        CharlestonStage.SecondRight => "second pass — to the right",
+        CharlestonStage.Courtesy => "courtesy — swap with the player across",
+        _ => "finishing up",
+    };
+
+    private static string PassDirection(CharlestonStage c) => c switch
+    {
+        CharlestonStage.PassRight or CharlestonStage.SecondRight => "right",
+        CharlestonStage.PassAcross or CharlestonStage.SecondAcross => "across",
+        _ => "left",
+    };
+
+    private MarkupString CharlestonHint(GameState s)
+    {
+        var text = s.CharlestonStage switch
+        {
+            CharlestonStage.PassRight or CharlestonStage.PassAcross or CharlestonStage.PassLeft =>
+                "The <b>Charleston</b> mixes everyone's hands: pass 3 unwanted tiles three times — right, across, then left.",
+            CharlestonStage.Vote =>
+                "First round done. A second Charleston runs <b>only if all four players agree</b> — it reverses direction (left, across, right).",
+            CharlestonStage.SecondLeft or CharlestonStage.SecondAcross or CharlestonStage.SecondRight =>
+                "Second Charleston: same idea, opposite order — left, across, right.",
+            CharlestonStage.Courtesy =>
+                "Last step: offer 0–3 tiles to trade with the player <b>across</b> the table. Each pair swaps the smaller of the two offers — offer 0 to pass nothing.",
+            _ => "Waiting for the other players…",
+        };
+        return new(text);
+    }
 
     private async Task TileClicked(Tile t)
     {
