@@ -10,9 +10,15 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: Host=postgres;Port=5432;Database=mahjongtutor;Username=mahjong;Password=${POSTGRES_PASSWORD:-mahjong}
+      Seq__ServerUrl: http://seq:5341
+      Otel__Endpoint: http://jaeger:4317
     depends_on:
       postgres:
         condition: service_healthy
+      seq:
+        condition: service_started
+      jaeger:
+        condition: service_started
     restart: unless-stopped
 
   postgres:
@@ -34,5 +40,28 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Structured log UI: http://localhost:5341
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:80"
+    volumes:
+      - seqdata:/data
+    restart: unless-stopped
+
+  # Trace UI: http://localhost:16686  (app sends OTLP gRPC to jaeger:4317)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # query UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  seqdata:
