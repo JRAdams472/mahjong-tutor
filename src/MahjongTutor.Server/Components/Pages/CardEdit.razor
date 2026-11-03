@@ -1,0 +1,115 @@
+@page "/cards/new"
+@page "/cards/{Id:int}"
+@using MahjongTutor.Server.Cards
+@inject ICardStore Store
+@inject NavigationManager Nav
+
+<PageTitle>@(IsNew ? "New card" : $"Edit card #{Id}") — MahjongTutor</PageTitle>
+
+@if (_model == null)
+{
+    <p>Loading…</p>
+}
+else
+{
+    <h1>@(IsNew ? "New card" : $"Edit card — {_model.Name}")</h1>
+
+    <div class="card-meta">
+        <label>Year <input type="number" @bind="_model.Year" /></label>
+        <label>Name <input @bind="_model.Name" placeholder="e.g. 2026 Card" /></label>
+        <label class="wide">Notes <input @bind="_model.Notes" /></label>
+    </div>
+
+    @for (var ci = 0; ci < _model.Categories.Count; ci++)
+    {
+        var cat = _model.Categories[ci];
+        var ciCopy = ci;
+        <section class="category">
+            <div class="cat-head">
+                <input class="cat-name" @bind="cat.Name" placeholder="Category name (e.g. 2468)" />
+                <button class="btn small" @onclick="() => AddHand(ciCopy)">+ hand</button>
+                <button class="btn small danger" @onclick="() => _model.Categories.RemoveAt(ciCopy)">✕ category</button>
+            </div>
+
+            @foreach (var h in cat.Hands)
+            {
+                <div class="hand">
+                    <div class="hand-fields">
+                        <label>Id <input class="id" @bind="h.Id" placeholder="e.g. 2468-1" /></label>
+                        <label>Points <input type="number" class="points" @bind="h.Points" /></label>
+                        <label class="check"><input type="checkbox" @bind="h.Concealed" /> Concealed</label>
+                        <button class="btn small danger" @onclick="() => cat.Hands.Remove(h)">✕</button>
+                    </div>
+                    <PatternEditor @bind-Value="h.Pattern" />
+                    <GroupBuilder OnAdd="g => h.Pattern = string.IsNullOrWhiteSpace(h.Pattern) ? g : h.Pattern + ' ' + g" />
+                </div>
+            }
+            @if (cat.Hands.Count == 0)
+            {
+                <p class="dim">No hands in this category.</p>
+            }
+        </section>
+    }
+
+    <div class="toolbar">
+        <button class="btn" @onclick="() => _model.Categories.Add(new CategoryEditModel())">+ category</button>
+        <button class="btn primary" @onclick="Save">Save card</button>
+        <a class="btn" href="/cards">Back</a>
+    </div>
+
+    @if (_errors.Count > 0)
+    {
+        <div class="notice bad">
+            <ul>@foreach (var e in _errors) { <li>@e</li> }</ul>
+        </div>
+    }
+    @if (_message != null) { <div class="notice ok">@_message</div> }
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool IsNew => Id is null;
+    private CardEditModel? _model;
+    private List<string> _errors = [];
+    private string? _message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _errors = []; _message = null;
+        if (IsNew)
+        {
+            _model = new CardEditModel();
+        }
+        else
+        {
+            var card = await Store.GetAsync(Id!.Value);
+            if (card == null) { Nav.NavigateTo("/cards"); return; }
+            _model = CardEditModel.FromCard(card);
+        }
+    }
+
+    private void AddHand(int ci)
+    {
+        var cat = _model!.Categories[ci];
+        cat.Hands.Add(new HandEditModel { Id = $"{ci + 1}-{cat.Hands.Count + 1}" });
+    }
+
+    private async Task Save()
+    {
+        _errors = []; _message = null;
+        var card = _model!.ToCard();
+        _errors = Core.Card.CardJson.Validate(card);
+        if (_errors.Count > 0) return;
+        try
+        {
+            var id = await Store.SaveAsync(card, Id);
+            _message = "Saved.";
+            if (IsNew) Nav.NavigateTo($"/cards/{id}");
+        }
+        catch (Exception ex)
+        {
+            _errors = [ex.Message];
+        }
+    }
+}

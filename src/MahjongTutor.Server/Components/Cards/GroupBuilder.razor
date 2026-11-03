@@ -1,0 +1,80 @@
+@* Guided group composer: builds one pattern group from dropdowns and appends it. *@
+<div class="group-builder">
+    <select @bind="_kind">
+        <option value="num">Numbers</option>
+        <option value="var">Number var (X/Y/Z)</option>
+        <option value="flower">Flowers</option>
+        <option value="wind">Winds</option>
+        <option value="dragon">Dragon</option>
+        <option value="suitdragon">Suit dragon (D)</option>
+    </select>
+
+    @if (_kind is "num" or "var")
+    {
+        @if (_kind == "num")
+        {
+            <select @bind="_rank">
+                @for (var r = 1; r <= 9; r++) { <option value="@r">@r</option> }
+            </select>
+        }
+        else
+        {
+            <select @bind="_varLetter">
+                <option>X</option><option>Y</option><option>Z</option>
+            </select>
+            <select @bind="_varOffset">
+                @for (var o = 0; o <= 8; o++) { <option value="@o">+@o</option> }
+            </select>
+        }
+        <select @bind="_suit">
+            @foreach (var v in new[] { 'a','b','c','d','e','f' }) { <option value="@v">suit @v</option> }
+        </select>
+    }
+    @if (_kind == "wind")
+    {
+        <select @bind="_wind">
+            <option value="N">N</option><option value="E">E</option>
+            <option value="S">S</option><option value="W">W</option>
+        </select>
+    }
+    @if (_kind == "dragon")
+    {
+        <select @bind="_dragon">
+            <option value="R">Red (R)</option><option value="G">Green (G)</option>
+            <option value="0">Soap (0)</option>
+        </select>
+    }
+    @if (_kind is "num" or "var" or "wind" or "dragon" or "suitdragon" or "flower")
+    {
+        <select @bind="_count">
+            @for (var n = 1; n <= 5; n++) { <option value="@n">x@n</option> }
+        </select>
+    }
+    <code class="preview mono">@Preview</code>
+    <button type="button" class="btn small" @onclick="Add">Add group</button>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnAdd { get; set; }
+
+    private string _kind = "num";
+    private int _rank = 1;
+    private char _varLetter = 'X';
+    private int _varOffset;
+    private char _suit = 'a';
+    private string _wind = "N";
+    private string _dragon = "R";
+    private int _count = 4;
+
+    private string Preview => _kind switch
+    {
+        "flower" => new string('F', _count),
+        "wind" => string.Concat(Enumerable.Repeat(_wind, _count)),
+        "dragon" => string.Concat(Enumerable.Repeat(_dragon, _count)),
+        "suitdragon" => new string('D', _count) + _suit,
+        "var" => new string(_varLetter, _count) + _varOffset.ToString() + _suit,
+        _ => new string((char)('0' + _rank), _count) + _suit,
+    };
+
+    private Task Add() => OnAdd.InvokeAsync(Preview);
+}
