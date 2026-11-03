@@ -1,0 +1,12 @@
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Tiles
+@inject TileSetManager Tiles
+
+<img class="tile @Class" src="@Tiles.TilePath(TileKind, "default", Variant)"
+     title="@TileKind.Code()" draggable="false" />
+
+@code {
+    [Parameter] public Tile TileKind { get; set; }
+    [Parameter] public int Variant { get; set; }
+    [Parameter] public string? Class { get; set; }
+}
