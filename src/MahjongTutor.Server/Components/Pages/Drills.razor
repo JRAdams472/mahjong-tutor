@@ -1,0 +1,100 @@
+@page "/drills"
+@using MahjongTutor.Core.Card
+@using MahjongTutor.Core.Coach
+@using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Cards
+@inject ICardStore Store
+
+<PageTitle>Drills — MahjongTutor</PageTitle>
+
+<h1>Practice drills</h1>
+
+@if (_card == null)
+{
+    <div class="notice bad">No active card — enter one under Cards first.</div>
+}
+else
+{
+    <div class="toolbar">
+        <button class="btn @(_mode=="pass"?"primary":"")" @onclick='() => New("pass")'>Pass drill</button>
+        <button class="btn @(_mode=="discard"?"primary":"")" @onclick='() => New("discard")'>Discard drill</button>
+    </div>
+
+    @if (_rack != null)
+    {
+        <h2>@(_mode == "pass" ? "Pick the 3 tiles you'd pass" : "Pick the tile to discard")</h2>
+        <div class="myrack">
+            @foreach (var t in _rack.ToList())
+            {
+                var tt = t;
+                <span class="@(_selected.Contains(tt) ? "sel" : "")" @onclick="() => Click(tt)">
+                    <TileImg TileKind="tt" />
+                </span>
+            }
+        </div>
+
+        @if (_result == null)
+        {
+            <button class="btn primary" @onclick="Check"
+                    disabled="@(_mode=="pass" ? _selected.Count!=3 : _selected.Count!=1)">Check</button>
+        }
+        else
+        {
+            <div class="suggest">@((MarkupString)_result)</div>
+            <button class="btn" @onclick="() => New(_mode!)">Next rack</button>
+        }
+    }
+}
+
+@code {
+    private MahjongCard? _card;
+    private string? _mode, _result;
+    private TileBag? _rack;
+    private List<Tile> _selected = [];
+
+    protected override async Task OnInitializedAsync() =>
+        _card = await Store.GetActiveAsync();
+
+    private void New(string mode)
+    {
+        _mode = mode; _result = null; _selected = [];
+        var wall = TileKinds.FullWall().ToList();
+        var rng = new Random();
+        for (var i = wall.Count - 1; i > 0; i--)
+        { var j = rng.Next(i + 1); (wall[i], wall[j]) = (wall[j], wall[i]); }
+        _rack = new TileBag();
+        foreach (var t in wall.Take(mode == "pass" ? 13 : 14)) _rack.Add(t);
+    }
+
+    private void Click(Tile t)
+    {
+        if (_result != null) return;
+        if (_selected.Contains(t)) _selected.Remove(t);
+        else if (_mode == "discard") { _selected = [t]; }
+        else if (_selected.Count < 3) _selected.Add(t);
+    }
+
+    private void Check()
+    {
+        var grades = CoachBrain.GradeRack(_rack!, _card!);
+        if (_mode == "discard")
+        {
+            var mine = grades.First(g => g.Tile == _selected[0]);
+            var best = grades[0].Tile.Code();
+            _result = mine.Delta == 0
+                ? $"✅ <b>{_selected[0].Code()}</b> is the best play — {mine.NeedAfter} tiles out."
+                : $"❌ <b>{_selected[0].Code()}</b> leaves you {mine.NeedAfter} out (+{mine.Delta}) — " +
+                  $"coach preferred <b>{best}</b>.";
+        }
+        else
+        {
+            var best = grades.SelectMany(g => Enumerable.Repeat(g.Tile, _rack![g.Tile])).Take(3).ToList();
+            var hits = _selected.Count(best.Contains);
+            _result = (hits == 3
+                ? "✅ Perfect pass — coach agrees on all three."
+                : $"🟡 {hits}/3 match the coach's picks") +
+                $" — best: {string.Join(" ", best.Select(t => t.Code()))}, " +
+                $"you picked: {string.Join(" ", _selected.Select(t => t.Code()))}";
+        }
+    }
+}
