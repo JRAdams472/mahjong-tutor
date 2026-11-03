@@ -22,6 +22,7 @@ public sealed class Room
     public GameEngine? Engine { get; set; }
     public List<GameEvent> Log { get; } = [];
     public bool Started => Engine != null;
+    public bool Recorded { get; set; }
 
     public int Humans => SeatNames.Count;
     public IEnumerable<int> BotSeats => Enumerable.Range(0, 4).Except(SeatNames.Keys);
@@ -31,7 +32,7 @@ public sealed class Room
 /// LAN multiplayer: name + room code, up to 4 humans, bots fill the rest.
 /// Singleton; each circuit subscribes to <see cref="Changed"/> to re-render.
 /// </summary>
-public sealed class RoomManager(ICardStore cards)
+public sealed class RoomManager(ICardStore cards, StatsStore stats)
 {
     private readonly ConcurrentDictionary<string, Room> _rooms = new();
     public event Action? Changed;
@@ -91,6 +92,11 @@ public sealed class RoomManager(ICardStore cards)
             await Task.Delay(200);
             room.Log.AddRange(act());
             Fire();
+        }
+        if (!room.Recorded && e.State.Phase == GamePhase.Finished)
+        {
+            room.Recorded = true;
+            await stats.RecordFinishedAsync(e.State, room.SeatNames, room.Log, solo: false);
         }
     }
 

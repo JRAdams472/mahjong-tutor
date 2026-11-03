@@ -13,7 +13,7 @@ public sealed record CoachNote(string Severity, string Text);
 /// Scoped per Blazor circuit. Every human action also consults the coach
 /// and records notes (missed calls, suboptimal discards).
 /// </summary>
-public sealed class GameSession(ICardStore cards)
+public sealed class GameSession(ICardStore cards, StatsStore stats)
 {
     public const int HumanSeat = 0;
 
@@ -65,11 +65,23 @@ public sealed class GameSession(ICardStore cards)
     public async Task HumanExchangeAsync(int owner, int meld, Tile natural) =>
         await Act(e => e.ExchangeJoker(0, owner, meld, natural));
 
+    private bool _recorded;
+
     private async Task Act(Func<GameEngine, IReadOnlyList<GameEvent>> action)
     {
         if (Engine == null) throw new InvalidOperationException("no game");
         Log.AddRange(action(Engine));
         await RunBotsAsync();
+        await MaybeRecordAsync();
+    }
+
+    private async Task MaybeRecordAsync()
+    {
+        var s = Engine?.State;
+        if (_recorded || s is not { Phase: GamePhase.Finished }) return;
+        _recorded = true;
+        await stats.RecordFinishedAsync(s,
+            new Dictionary<int, string> { [0] = "you" }, Log, solo: true);
     }
 
     // ---- bots ----------------------------------------------------------------
