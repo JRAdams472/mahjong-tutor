@@ -97,3 +97,12 @@ public sealed class TileSetEntity
     public bool IsBundled { get; set; }
     public DateTime CreatedUtc { get; set; }
 }
+
+/// <summary>A saved in-progress game — full GameState snapshot as JSON.</summary>
+public sealed class SavedGame
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string Snapshot { get; set; } = "";
+    public DateTime UpdatedUtc { get; set; }
+}

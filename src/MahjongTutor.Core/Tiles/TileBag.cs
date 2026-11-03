@@ -23,6 +23,9 @@ public sealed class TileBag
 
     public void Add(Tile t, int n = 1) => _counts[(int)t] += n;
 
+    /// <summary>Empties the bag (snapshot restore).</summary>
+    public void Clear() => Array.Clear(_counts);
+
     /// <summary>Removes n copies; returns false (unchanged) if fewer than n held.</summary>
     public bool Remove(Tile t, int n = 1)
     {

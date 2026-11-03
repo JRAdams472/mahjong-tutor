@@ -6,6 +6,7 @@
 @using MahjongTutor.Server.Game
 @using MahjongTutor.Server.Tiles
 @inject GameSession Session
+@inject SavedGameStore Saves
 @inject TileSetManager Tiles
 
 <PageTitle>Play — MahjongTutor</PageTitle>
@@ -15,6 +16,16 @@
     <h1>Play vs bots</h1>
     <button class="btn primary" @onclick="Start">New game</button>
     @if (_error != null) { <div class="notice bad">@_error</div> }
+
+    <h2>Saved games</h2>
+    @foreach (var g in _saved)
+    {
+        <div class="fit">
+            <b>@g.Name</b> · @g.UpdatedUtc.ToLocalTime().ToString("g")
+            <button class="btn small" @onclick="() => Resume(g.Id)">Resume</button>
+            <button class="btn small" @onclick="() => DeleteSaved(g.Id)">Delete</button>
+        </div>
+    }
 }
 else
 {
@@ -60,6 +71,11 @@ else
                     @foreach (var h in r.Likely) { <span class="chip">@h.Id</span> }
                 </div>
             }
+            <h4>Save</h4>
+            <div class="toolbar">
+                <input class="input grow" placeholder="save name" @bind="_saveName" />
+                <button class="btn small" @onclick="Save">Save</button>
+            </div>
             <h4>Notes</h4>
             @foreach (var n in Session.Notes.Take(6))
             {
@@ -72,6 +88,31 @@ else
 @code {
     private GameEngine? Engine;
     private string? _error;
+    private string _saveName = "";
+    private List<MahjongTutor.Server.Data.SavedGame> _saved = [];
+
+    protected override async Task OnInitializedAsync() =>
+        _saved = await Saves.ListAsync();
+
+    private async Task Save()
+    {
+        _error = null;
+        try { await Session.SaveAsync(string.IsNullOrWhiteSpace(_saveName) ? "save" : _saveName); }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task Resume(int id)
+    {
+        _error = null;
+        if (!await Session.LoadAsync(id)) { _error = "Couldn't load that save."; return; }
+        Engine = Session.Engine;
+    }
+
+    private async Task DeleteSaved(int id)
+    {
+        await Saves.DeleteAsync(id);
+        _saved = await Saves.ListAsync();
+    }
 
     private async Task Start()
     {

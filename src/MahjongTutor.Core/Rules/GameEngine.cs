@@ -17,6 +17,12 @@ public sealed class GameEngine
 
     public GameState State { get; }
 
+    /// <summary>Resume a saved game from a restored snapshot.</summary>
+    public GameEngine(GameState restored)
+    {
+        State = restored;
+    }
+
     public GameEngine(MahjongCard card, int seed = 0, int dealer = 0)
     {
         var wall = TileKinds.FullWall().ToList();

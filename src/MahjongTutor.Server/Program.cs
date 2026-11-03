@@ -46,6 +46,7 @@ builder.Services.AddScoped<MahjongTutor.Server.Game.GameSession>();
 builder.Services.AddSingleton<MahjongTutor.Server.Game.RoomManager>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.PlayerSession>();
 builder.Services.AddScoped<MahjongTutor.Server.Game.StatsStore>();
+builder.Services.AddScoped<MahjongTutor.Server.Game.SavedGameStore>();
 
 var app = builder.Build();
 
