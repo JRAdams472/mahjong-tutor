@@ -169,6 +169,19 @@ else
                     </div>
                 </div>
             }
+            <h4>Opponents</h4>
+            @{ var reads = Defense.Reads(s, 0); }
+            @if (reads.Count == 0)
+            {
+                <div class="dim">No exposures yet — nothing to infer.</div>
+            }
+            @foreach (var r in reads)
+            {
+                <div class="fit">
+                    <b>Seat @r.Seat</b> likely:
+                    @foreach (var h in r.Likely) { <span class="chip">@h.Id</span> }
+                </div>
+            }
             <h4>Notes</h4>
             @foreach (var n in Session.Notes.Take(6))
             {
@@ -215,7 +228,9 @@ else
         if (s.CurrentSeat == 0 && s.Stage == TurnStage.AwaitDiscard)
         {
             var d = CoachBrain.SuggestPass(s, 0, 1);
-            return new($"Coach would discard: <b>{d[0].Code()}</b>");
+            var warn = Defense.DangerNote(s, 0, d[0]);
+            return new($"Coach would discard: <b>{d[0].Code()}</b>" +
+                       (warn != null ? $" — <span class='warn'>{warn}</span>" : ""));
         }
         return new("Waiting…");
     }

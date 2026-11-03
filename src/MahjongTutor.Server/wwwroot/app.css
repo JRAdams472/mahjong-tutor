@@ -153,3 +153,4 @@ img.tile.back { height: 44px; }
 .hint { width: 100%; background: #163024; border-left: 3px solid #4a9;
         padding: .45rem .7rem; border-radius: 4px; margin-bottom: .4rem;
         font-size: .85rem; color: #cfe8dc; }
+.warn { color: #ffd867; }
