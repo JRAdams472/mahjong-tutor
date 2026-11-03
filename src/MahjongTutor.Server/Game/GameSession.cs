@@ -1,3 +1,4 @@
+using MahjongTutor.Core.Bots;
 using MahjongTutor.Core.Rules;
 using MahjongTutor.Core.Tiles;
 using MahjongTutor.Server.Cards;
@@ -58,16 +59,16 @@ public sealed class GameSession(ICardStore cards)
                     : !s.PendingPasses.ContainsKey(b));
             if (b == 0) return null;
             return () => s.CharlestonStage == CharlestonStage.Vote
-                ? e.Vote(b, false)
+                ? e.Vote(b, BotBrain.VoteSecondCharleston(s, b))
                 : s.CharlestonStage == CharlestonStage.Courtesy
-                    ? e.SubmitCourtesy(b, [])
-                    : e.SubmitPass(b, s.Seats[b].Concealed.ToList().Take(3).ToList());
+                    ? e.SubmitCourtesy(b, BotBrain.Courtesy(s, b))
+                    : e.SubmitPass(b, BotBrain.CharlestonPass(s, b));
         }
 
         if (s.Stage == TurnStage.CallWindow)
         {
             var b = s.PendingOptions.Keys.FirstOrDefault(k => k != HumanSeat && !s.PendingResponded.Contains(k));
-            return b == 0 ? null : () => e.Claim(b, null);
+            return b == 0 ? null : () => e.Claim(b, BotBrain.DecideClaim(s, b, s.PendingDiscard!.Value));
         }
 
         if (s.CurrentSeat == HumanSeat || s.Stage == TurnStage.Finished) return null;
@@ -75,7 +76,18 @@ public sealed class GameSession(ICardStore cards)
         return s.Stage switch
         {
             TurnStage.AwaitDraw => () => e.Draw(seat),
-            TurnStage.AwaitDiscard => () => e.Discard(seat, s.Seats[seat].Concealed.ToList().First()),
+            TurnStage.AwaitDiscard => () =>
+            {
+                // take every available joker exchange first
+                if (BotBrain.JokerExchanges(s, seat) is { Count: > 0 } xs)
+                    return e.ExchangeJoker(seat, xs[0].owner, xs[0].meld, xs[0].natural);
+                return BotBrain.OnTurn(s, seat) switch
+                {
+                    BotTurnAct.Mahjong => e.DeclareMahjong(seat),
+                    BotTurnAct.Discard d => e.Discard(seat, d.Tile),
+                    _ => throw new InvalidOperationException(),
+                };
+            },
             _ => null,
         };
     }

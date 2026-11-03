@@ -1,4 +1,5 @@
 @page "/play"
+@using MahjongTutor.Core.Bots
 @using MahjongTutor.Core.Rules
 @using MahjongTutor.Core.Tiles
 @using MahjongTutor.Server.Game
@@ -115,6 +116,13 @@ else
                 else if (s.Stage == TurnStage.AwaitDiscard)
                 {
                     <span>Click a tile to discard</span>
+                    @foreach (var x in BotBrain.JokerExchanges(s, 0))
+                    {
+                        var xx = x;
+                        <button class="btn" @onclick="() => Act(e => e.ExchangeJoker(0, xx.owner, xx.meld, xx.natural))">
+                            Swap @xx.natural.Code() for joker
+                        </button>
+                    }
                     <button class="btn" @onclick="() => Act(e => e.DeclareMahjong(0))">Mahjong!</button>
                 }
             }

@@ -169,12 +169,14 @@ public static class CardMatcher
                 chosen[g] = new(reqs, IsJokerEligible(reqs));
             }
             // Concealed hands cannot have exposures.
-            if (hand.Concealed && exposed is { Count: > 0 }) continue;
-            var exposureMap = exposed == null ? null : MatchExposed(exposed, chosen);
-            if (exposed == null || exposureMap != null)
+            if (!(hand.Concealed && exposed is { Count: > 0 }))
             {
-                var fit = Score(rack, hand, chosen, pool, suitMap, exposureMap, exposed);
-                if (best == null || IsBetter(fit, best)) best = fit;
+                var exposureMap = exposed == null ? null : MatchExposed(exposed, chosen);
+                if (exposed == null || exposureMap != null)
+                {
+                    var fit = Score(rack, hand, chosen, pool, suitMap, exposureMap, exposed);
+                    if (best == null || IsBetter(fit, best)) best = fit;
+                }
             }
             var p = groupOptions.Count - 1;
             while (p >= 0 && ++indices[p] == groupOptions[p].Count) indices[p--] = 0;
