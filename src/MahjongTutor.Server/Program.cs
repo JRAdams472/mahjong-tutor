@@ -2,8 +2,36 @@ using MahjongTutor.Server.Cards;
 using MahjongTutor.Server.Components;
 using MahjongTutor.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ---- logging: console always, Seq when Seq__ServerUrl is set ----
+var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console();
+var seqUrl = builder.Configuration["Seq:ServerUrl"];
+if (!string.IsNullOrEmpty(seqUrl)) logger = logger.WriteTo.Seq(seqUrl);
+builder.Host.UseSerilog(logger.CreateLogger(), dispose: true);
+
+// ---- telemetry: traces + metrics, OTLP when Otel__Endpoint is set ----
+var otlp = builder.Configuration["Otel:Endpoint"];
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t =>
+    {
+        t.AddAspNetCoreInstrumentation()
+         .AddHttpClientInstrumentation();
+        if (!string.IsNullOrEmpty(otlp)) t.AddOtlpExporter(o => o.Endpoint = new Uri(otlp));
+    })
+    .WithMetrics(m =>
+    {
+        m.AddAspNetCoreInstrumentation()
+         .AddRuntimeInstrumentation();
+        if (!string.IsNullOrEmpty(otlp)) m.AddOtlpExporter(o => o.Endpoint = new Uri(otlp));
+    });
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
