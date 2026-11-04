@@ -62,11 +62,12 @@
     }
 
     <div class="myrack">
-        @foreach (var t in SortedRack())
+        @{ var rack = SortedRack(); }
+        @for (var i = 0; i < rack.Count; i++)
         {
-            var tt = t;
-            <span class="@TileClass(tt)" @onclick="() => TileClicked(tt)">
-                <TileImg TileKind="tt" />
+            var idx = i;
+            <span class="@TileClass(idx)" @onclick="() => TileClicked(rack[idx], idx)">
+                <TileImg TileKind="rack[idx]" />
             </span>
         }
     </div>
@@ -79,14 +80,14 @@
             {
                 <span>Courtesy: pick 0–3 (selected @_selected.Count)</span>
                 <button class="btn primary" disabled="@(_selected.Count > 3)"
-                        @onclick="() => Act(() => OnCourtesy.InvokeAsync([.. _selected]))">Pass</button>
+                        @onclick="() => Act(() => OnCourtesy.InvokeAsync(SelectedTiles()))">Pass</button>
             }
             else if (State.CharlestonStage != CharlestonStage.Vote && State.CharlestonStage != CharlestonStage.Done
                      && !State.PendingPasses.ContainsKey(Seat))
             {
                 <span><b>Click 3 tiles</b> to select them (selected @_selected.Count), then:</span>
                 <button class="btn primary" disabled="@(_selected.Count != 3)"
-                        @onclick="() => Act(() => OnPass.InvokeAsync([.. _selected]))">
+                        @onclick="() => Act(() => OnPass.InvokeAsync(SelectedTiles()))">
                     Pass @PassDirection(State.CharlestonStage)
                 </button>
             }
@@ -156,12 +157,13 @@
     [Parameter] public IReadOnlyList<GameEvent>? Log { get; set; }
     [Parameter] public IReadOnlyList<MahjongTutor.Server.Game.CoachNote>? Notes { get; set; }
 
-    private List<Tile> _selected = [];
+    private List<int> _selected = [];
     private string? _error;
     private string? ShownError => Error ?? _error;
 
     private List<Tile> SortedRack() => State.Seats[Seat].Concealed.ToList();
-    private string TileClass(Tile t) => _selected.Contains(t) ? "sel" : "";
+    private List<Tile> SelectedTiles() => _selected.Select(i => SortedRack()[i]).ToList();
+    private string TileClass(int idx) => _selected.Contains(idx) ? "sel" : "";
     private string SeatName(int i) => SeatNamer?.Invoke(i) ?? $"Seat {i}";
 
     private async Task Act(Func<Task> action)
@@ -171,13 +173,13 @@
         catch (Exception ex) { _error = ex.Message; }
     }
 
-    private async Task TileClicked(Tile t)
+    private async Task TileClicked(Tile t, int idx)
     {
         if (State.Phase == GamePhase.Charleston && !State.PendingPasses.ContainsKey(Seat)
             && State.CharlestonStage != CharlestonStage.Vote && State.CharlestonStage != CharlestonStage.Done)
         {
-            if (_selected.Contains(t)) _selected.Remove(t);
-            else if (_selected.Count < 3) _selected.Add(t);
+            if (_selected.Contains(idx)) _selected.Remove(idx);
+            else if (_selected.Count < 3) _selected.Add(idx);
         }
         else if (State.Phase == GamePhase.Play && State.Stage == TurnStage.AwaitDiscard
                  && State.CurrentSeat == Seat)
