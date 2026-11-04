@@ -2,13 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Restore first for layer caching (Server references Core)
-COPY src/MahjongTutor.Core/MahjongTutor.Core.csproj src/MahjongTutor.Core/
-COPY src/MahjongTutor.Server/MahjongTutor.Server.csproj src/MahjongTutor.Server/
-RUN dotnet restore src/MahjongTutor.Server/MahjongTutor.Server.csproj
-
+# Full source first: static-web-assets (_framework/blazor.web.js) are only
+# resolved into the publish output when the files exist at restore time.
 COPY src/ src/
-RUN dotnet publish src/MahjongTutor.Server/MahjongTutor.Server.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish src/MahjongTutor.Server/MahjongTutor.Server.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
