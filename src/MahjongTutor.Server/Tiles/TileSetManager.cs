@@ -58,17 +58,28 @@ public sealed class TileSetManager
                   || File.Exists(Path.Combine(dir, k + ".png")));
 
     /// <summary>Web path for a tile image. User sets route via /tilefile.</summary>
-    public string TilePath(Tile tile, string? set = null, int variant = 0)
+    public string TilePath(Tile tile, string? set = null, int variant = 0) =>
+        KeyPath(KeyOf(tile, variant), set);
+
+    /// <summary>Web path for the current set's tile back.</summary>
+    public string BackPath() => KeyPath("back", null);
+
+    private string KeyPath(string key, string? set)
     {
         set ??= CurrentSet;
-        var key = KeyOf(tile, variant);
         var ext = ExtFor(set, key);
-        return ext == null
-            ? $"tiles/default/{key}.svg"                     // missing key → fall back to bundled art
-            : File.Exists(Path.Combine(RootDir, set, key + ext))
-                ? $"tiles/{set}/{key}{ext}"
-                : $"tilefile/{set}/{key}{ext}";
+        if (ext == null)
+            return Versioned($"tiles/default/{key}.svg",        // missing key → fall back to bundled art
+                Path.Combine(RootDir, "default", key + ".svg"));
+        var bundled = Path.Combine(RootDir, set, key + ext);
+        return File.Exists(bundled)
+            ? Versioned($"tiles/{set}/{key}{ext}", bundled)
+            : Versioned($"tilefile/{set}/{key}{ext}", Path.Combine(UserDir, set, key + ext));
     }
+
+    /// <summary>Append a file-mtime cache-buster so updated art isn't served stale.</summary>
+    private static string Versioned(string webPath, string diskPath) =>
+        File.Exists(diskPath) ? $"{webPath}?v={File.GetLastWriteTimeUtc(diskPath).Ticks}" : webPath;
 
     /// <summary>Filesystem path for a user-set file (null if bundled/missing).</summary>
     public string? UserFile(string set, string keyExt)

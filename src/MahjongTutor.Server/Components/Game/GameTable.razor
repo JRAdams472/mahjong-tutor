@@ -1,8 +1,10 @@
 @using MahjongTutor.Core.Bots
 @using MahjongTutor.Core.Rules
 @using MahjongTutor.Core.Tiles
+@using MahjongTutor.Server.Tiles
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
+@inject TileSetManager Tiles
 
 @* Shared table view for solo + multiplayer. Actions surface as callbacks. *@
 <div class="table">
@@ -32,7 +34,7 @@
                 <div class="opp-rack">
                     @for (var k = 0; k < seat.Concealed.Total; k++)
                     {
-                        <img class="tile back" src="tiles/default/back.svg" />
+                        <img class="tile back" src="@Tiles.BackPath()" />
                     }
                 </div>
                 <div class="exposures">
