@@ -21,6 +21,9 @@ public sealed class GameSession(ICardStore cards, StatsStore stats, SavedGameSto
     public List<GameEvent> Log { get; } = [];
     public List<CoachNote> Notes { get; } = [];
 
+    /// <summary>How sharply the three bots play (solo only — multiplayer stays Expert).</summary>
+    public BotSkill BotSkill { get; set; } = BotSkill.Expert;
+
     public async Task<int> SaveAsync(string name) =>
         await saves.SaveAsync(name, Engine!.State);
 
@@ -113,7 +116,7 @@ public sealed class GameSession(ICardStore cards, StatsStore stats, SavedGameSto
     }
 
     /// <summary>Returns the next bot action, or null if waiting on the human/game over.</summary>
-    private static Func<IReadOnlyList<GameEvent>>? BotAction(GameEngine e)
+    private Func<IReadOnlyList<GameEvent>>? BotAction(GameEngine e)
     {
         var s = e.State;
         if (s.Phase == GamePhase.Finished) return null;
@@ -126,16 +129,16 @@ public sealed class GameSession(ICardStore cards, StatsStore stats, SavedGameSto
                     : !s.PendingPasses.ContainsKey(b));
             if (b == 0) return null;
             return () => s.CharlestonStage == CharlestonStage.Vote
-                ? e.Vote(b, BotBrain.VoteSecondCharleston(s, b))
+                ? e.Vote(b, BotBrain.VoteSecondCharleston(s, b, BotSkill))
                 : s.CharlestonStage == CharlestonStage.Courtesy
-                    ? e.SubmitCourtesy(b, BotBrain.Courtesy(s, b))
-                    : e.SubmitPass(b, BotBrain.CharlestonPass(s, b));
+                    ? e.SubmitCourtesy(b, BotBrain.Courtesy(s, b, BotSkill))
+                    : e.SubmitPass(b, BotBrain.CharlestonPass(s, b, BotSkill));
         }
 
         if (s.Stage == TurnStage.CallWindow)
         {
             var b = s.PendingOptions.Keys.FirstOrDefault(k => k != HumanSeat && !s.PendingResponded.Contains(k));
-            return b == 0 ? null : () => e.Claim(b, BotBrain.DecideClaim(s, b, s.PendingDiscard!.Value));
+            return b == 0 ? null : () => e.Claim(b, BotBrain.DecideClaim(s, b, s.PendingDiscard!.Value, BotSkill));
         }
 
         if (s.CurrentSeat == HumanSeat || s.Stage == TurnStage.Finished) return null;
@@ -145,9 +148,9 @@ public sealed class GameSession(ICardStore cards, StatsStore stats, SavedGameSto
             TurnStage.AwaitDraw => () => e.Draw(seat),
             TurnStage.AwaitDiscard => () =>
             {
-                if (BotBrain.JokerExchanges(s, seat) is { Count: > 0 } xs)
+                if (BotBrain.JokerExchanges(s, seat, BotSkill) is { Count: > 0 } xs)
                     return e.ExchangeJoker(seat, xs[0].owner, xs[0].meld, xs[0].natural);
-                return BotBrain.OnTurn(s, seat) switch
+                return BotBrain.OnTurn(s, seat, BotSkill) switch
                 {
                     BotTurnAct.Mahjong => e.DeclareMahjong(seat),
                     BotTurnAct.Discard d => e.Discard(seat, d.Tile),
