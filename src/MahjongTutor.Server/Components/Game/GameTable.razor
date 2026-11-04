@@ -124,6 +124,11 @@
         @if (State.Stage == TurnStage.CallWindow && State.PendingOptions.TryGetValue(Seat, out var opts)
              && !State.PendingResponded.Contains(Seat))
         {
+            @if (opts.Any(k => k is ClaimKind.Pung or ClaimKind.Kong or ClaimKind.Quint))
+            {
+                <span class="dim">Call to take that discard into an exposed set —
+                    a pung is 3 of a kind (you hold the pair).</span>
+            }
             @foreach (var k in opts)
             {
                 var kk = k;
