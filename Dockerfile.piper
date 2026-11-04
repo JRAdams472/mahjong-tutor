@@ -1,0 +1,20 @@
+# Piper TTS sidecar with the soothing amy-medium voice baked in.
+FROM python:3.11-slim
+
+ARG VOICE=en_US-amy-medium
+ARG BASE=https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0
+
+RUN pip install --no-cache-dir piper-tts flask
+
+# http_server resolves --model by voice name via voices.json (--update-voices),
+# looking for files under <data-dir>/<key>.onnx — so lay them out accordingly.
+WORKDIR /models
+RUN python -c "import os, urllib.request; \
+os.makedirs('en/en_US/amy/medium', exist_ok=True); \
+base='${BASE}/en/en_US/amy/medium'; \
+urllib.request.urlretrieve('${BASE}/voices.json', 'voices.json'); \
+[urllib.request.urlretrieve(f'{base}/{f}', f'en/en_US/amy/medium/{f}') \
+ for f in ('${VOICE}.onnx', '${VOICE}.onnx.json')]"
+
+CMD ["python", "-m", "piper.http_server", "--host", "0.0.0.0", "--port", "5000", \
+     "--model", "/models/en/en_US/amy/medium/en_US-amy-medium.onnx"]

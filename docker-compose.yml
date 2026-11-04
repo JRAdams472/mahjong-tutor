@@ -51,6 +51,7 @@ services:
     image: datalust/seq:latest
     environment:
       ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
     ports:
       - "5341:80"
     volumes:
@@ -84,14 +85,10 @@ services:
   #   docker compose --profile ai up -d
   # soothing female voice: en_US-amy-medium (downloads on first use)
   piper:
-    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.piper
     profiles: ["ai"]
-    command: >
-      sh -c "pip install --quiet piper-tts &&
-             python -m piper.http_server --host 0.0.0.0 --port 5000
-             -m ${PIPER_VOICE:-en_US-amy-medium} --data-dir /models"
-    volumes:
-      - pipermodels:/models
     ports:
       - "5001:5000"
     restart: unless-stopped
@@ -101,4 +98,3 @@ volumes:
   seqdata:
   tilesets:
   ollama:
-  pipermodels:
