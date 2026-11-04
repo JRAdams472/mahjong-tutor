@@ -90,11 +90,11 @@ public static class CoachBrain
     {
         var options = s.PendingOptions.GetValueOrDefault(seat, []);
         if (options.Contains(ClaimKind.Mahjong))
-            return $"You could have won! {tile.Code()} completes a hand on the card.";
+            return $"You could have won! {tile.DisplayName()} completes a hand on the card.";
         var fit = TopFits(s, seat, 3)
             .FirstOrDefault(f => f.Viable && !f.Hand.Concealed && f.Missing.Contains(tile));
         return fit == null ? null
-            : $"{tile.Code()} was callable toward {fit.Hand.Id} ({fit.TilesNeeded} tiles out) — worth a pung.";
+            : $"{tile.DisplayName()} was callable toward {fit.Hand.Id} ({fit.TilesNeeded} tiles out) — worth a pung.";
     }
 
     /// <summary>Note when a discard was suboptimal (null = optimal choice).</summary>
@@ -107,9 +107,9 @@ public static class CoachBrain
         var fits = TopFits(s, seat, 3);
         var target = fits.FirstOrDefault(f => f.Viable)?.Hand.Id ?? "your best hand";
         var how = mine.Delta >= 2
-            ? $"{chosen.Code()} costs you {mine.Delta} tiles of progress"
-            : $"{chosen.Code()} is a tile farther out";
-        return $"{how} — {best.Tile.Code()} kept you closer to {target}.";
+            ? $"{chosen.DisplayName()} costs you {mine.Delta} tiles of progress"
+            : $"{chosen.DisplayName()} is a tile farther out";
+        return $"{how} — {best.Tile.DisplayName()} kept you closer to {target}.";
     }
 
     private static IReadOnlyList<IReadOnlyList<Tile>> Exposures(GameState s, int seat) =>

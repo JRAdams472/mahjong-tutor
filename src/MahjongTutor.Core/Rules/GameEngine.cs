@@ -372,7 +372,7 @@ public sealed class GameEngine
         Require(meld.Tiles.Contains(Tile.J), "meld has no joker");
         // The natural must match the meld's own tile kind.
         var meldTile = meld.Tiles.First(t => t != Tile.J);
-        Require(meldTile == natural, $"{natural.Code()} does not fit this exposure");
+        Require(meldTile == natural, $"{natural.DisplayName()} does not fit this exposure");
 
         var ev = Events();
         var tiles = meld.Tiles.ToList();

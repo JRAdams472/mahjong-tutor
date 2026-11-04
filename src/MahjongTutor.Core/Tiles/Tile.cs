@@ -83,7 +83,7 @@ public static class TileKinds
     {
         >= Tile.D1 and <= Tile.D9 => $"{t.RankOf()} dot",
         >= Tile.B1 and <= Tile.B9 => $"{t.RankOf()} bam",
-        >= Tile.C1 and <= Tile.C9 => $"{t.RankOf()} crak",
+        >= Tile.C1 and <= Tile.C9 => $"{t.RankOf()} crack",
         Tile.WN => "north", Tile.WE => "east",
         Tile.WS => "south", Tile.WW => "west",
         Tile.DR => "red dragon", Tile.DG => "green dragon", Tile.DW => "white dragon",
