@@ -16,7 +16,15 @@
 @if (Engine == null)
 {
     <h1>Play vs bots</h1>
-    <button class="btn primary" @onclick="Start">New game</button>
+    <div class="toolbar">
+        <label>Bot skill</label>
+        <select class="input" @bind="_skill">
+            <option value="Beginner">Beginner — random play, great for learning</option>
+            <option value="Casual">Casual — follows the card, plays greedy</option>
+            <option value="Expert" selected>Expert — full analysis and defense</option>
+        </select>
+        <button class="btn primary" @onclick="Start">New game</button>
+    </div>
     @if (_error != null) { <div class="notice bad">@_error</div> }
 
     <h2>Saved games</h2>
@@ -109,6 +117,7 @@ else
     private string? _answer;
     private bool _piperOn;
     private string? _speakUrl;
+    private string _skill = "Expert";
 
     private void Speak()
     {
@@ -161,7 +170,7 @@ else
     private async Task Start()
     {
         _error = null;
-        try { Engine = await Session.StartAsync(); }
+        try { Session.BotSkill = Enum.Parse<BotSkill>(_skill); Engine = await Session.StartAsync(); }
         catch (Exception ex) { _error = ex.Message; }
     }
 
