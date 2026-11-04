@@ -1,0 +1,80 @@
+@page "/rules"
+@using MahjongTutor.Core.Tiles
+
+<PageTitle>Rules — MahjongTutor</PageTitle>
+
+<h1>How American mahjong works</h1>
+<p>A plain-language guide to the game as the National Mah Jongg League plays it.
+The rules of play are common knowledge — but the yearly <em>card</em> of winning
+hands is the League's copyrighted material, which is why you enter your own card
+under <a href="/cards">Cards</a> instead of finding one here.</p>
+
+<h2>The goal</h2>
+<p>Be the first to complete a set of 14 tiles matching one hand printed on the
+card. Every hand is a mix of groups — pairs, pungs, kongs, quints — in specified
+suits and combinations.</p>
+
+<h2>The tiles (152)</h2>
+<div class="myrack">
+    <TileImg TileKind="Tile.D3" /><TileImg TileKind="Tile.B5" /><TileImg TileKind="Tile.C7" />
+    <TileImg TileKind="Tile.WN" /><TileImg TileKind="Tile.DR" /><TileImg TileKind="Tile.DG" />
+    <TileImg TileKind="Tile.DW" /><TileImg TileKind="Tile.F" /><TileImg TileKind="Tile.J" />
+</div>
+<ul>
+    <li><b>Suits</b> — dots, bams, and cracks, ranks 1–9, four copies each (108 tiles).</li>
+    <li><b>Winds</b> — north, east, south, west, four copies each (16).</li>
+    <li><b>Dragons</b> — red, green, and white ("soap"), four copies each (12). Dragons pair with suits: green↔bam, red↔crack, white↔dot.</li>
+    <li><b>Flowers</b> — 8 interchangeable tiles used where the card shows F.</li>
+    <li><b>Jokers</b> — 8 wild tiles. They stand in for <em>any</em> tile, but only inside groups of three or more (pung, kong, quint) — never for a pair or a single.</li>
+</ul>
+
+<h2>The deal</h2>
+<p>Everyone starts with 13 tiles; the dealer (East) takes 14 and discards first.</p>
+
+<h2>The Charleston</h2>
+<p>Before play begins, hands are shuffled by passing tiles:</p>
+<ol>
+    <li>Pass <b>3 tiles</b> to the player on your <b>right</b>, then <b>across</b>, then <b>left</b>.</li>
+    <li>Optionally, if <em>all four</em> players agree, a second Charleston runs in reverse — left, across, right.</li>
+    <li>Finish with the <b>courtesy</b>: offer 0–3 tiles to the player across. Each pair trades the smaller offer.</li>
+</ol>
+<p>Tip: pass tiles that don't fit the hands you're considering — the coach panel
+suggests your three weakest tiles.</p>
+
+<h2>A turn</h2>
+<p>Draw the top tile of the wall, then discard one tile face-up into the middle.
+That's the whole rhythm — draw, discard, repeat.</p>
+
+<h2>Calling a discard</h2>
+<p>When anyone discards, the game pauses. If the tile completes a group in your
+hand, you may <b>call</b> it — the set moves to your exposed rack and you discard
+to end your turn:</p>
+<ul>
+    <li><b>Pung</b> — 3 of a kind; you must already hold a matching pair.</li>
+    <li><b>Kong</b> — 4 of a kind; you hold three.</li>
+    <li><b>Quint</b> — 5 of a kind; you hold four (always involves jokers).</li>
+</ul>
+<p>You can <em>never</em> call a tile to complete a pair or a single — except to
+declare <b>mahjong</b> and win. Discarded jokers are dead; nobody may call them.</p>
+
+<h2>Joker exchanges</h2>
+<p>If an exposure on the table contains a joker and you hold the natural tile it
+represents, you may swap them on your turn — taking the joker into your hand.
+The table offers these swaps automatically when you have one.</p>
+
+<h2>Winning</h2>
+<p>Complete a hand on the card and declare <b>mahjong</b> — on your own draw
+("self-picked") or by calling someone's discard. Watch the card's letter codes:
+a hand marked <b>C</b> (concealed) must be built entirely from your rack with no
+exposures — so don't call if you're aiming concealed.</p>
+
+<h2>Exposures and dead hands</h2>
+<p>Once you expose a group, you've committed: your remaining tiles must still be
+able to reach a hand that matches what you've shown. An impossible rack, a wrong
+tile count, or a hand that can't exist on the card makes you <b>dead</b> — you
+keep playing but can't win.</p>
+
+<h2>Where the coach fits</h2>
+<p>The panel on the right suggests passes and discards, warns when a discard
+might feed an opponent's exposed hand, and notes calls you could have made —
+try the <a href="/drills">drills</a> to rehearse Charleston passes and discards.</p>
