@@ -75,7 +75,7 @@ app.MapGet("/speak", async (string text, IHttpClientFactory http, IConfiguration
 {
     var url = cfg["Piper:Url"];
     if (string.IsNullOrEmpty(url) || string.IsNullOrWhiteSpace(text)) return Results.NotFound();
-    var res = await http.CreateClient().PostAsync(url,
+    var res = await http.CreateClient().PostAsync($"{url.TrimEnd('/')}/synthesize",
         new StringContent(System.Text.Json.JsonSerializer.Serialize(new { text }),
             System.Text.Encoding.UTF8, "application/json"));
     if (!res.IsSuccessStatusCode) return Results.Problem("piper unreachable");
