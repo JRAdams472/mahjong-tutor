@@ -161,3 +161,9 @@ img.tile.back { height: 44px; }
 .review h4 { margin: 0 0 .4rem; }
 .gamelog { margin-top: .5rem; }
 .gamelog summary { cursor: pointer; color: #9fc4b1; }
+
+/* ---- card editor tile preview ---- */
+.pattern-preview { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; }
+.pgrp { display: inline-flex; align-items: center; gap: 2px; background: #0c1a12;
+        border-radius: 4px; padding: 2px 4px; }
+.pgrp .tile { width: 22px; }

@@ -10,7 +10,22 @@
     else if (_parsed != null)
     {
         <div class="pattern-status @(Complete ? "ok" : "warn")">
-            @_parsed.TileCount / 14 tiles — @_parsed.ToString()
+            @_parsed.TileCount / 14 tiles
+        </div>
+        @* render each group's first option as tile images (preview assigns
+           suit vars a→dot b→bam c→crak; rank vars shown as chips) *@
+        <div class="pattern-preview">
+            @foreach (var g in _parsed.Groups)
+            {
+                <div class="pgrp">
+                    @foreach (var s in g.Options[0].Slots)
+                    {
+                        @if (PreviewTile(s) is { } t) { <TileImg TileKind="t" /> }
+                        else { <span class="chip">@PreviewChip(s)</span> }
+                    }
+                    @if (g.Options.Count > 1) { <span class="chip">…</span> }
+                </div>
+            }
         </div>
     }
     else
@@ -44,4 +59,37 @@
         Reparse();
         await ValueChanged.InvokeAsync(Value);
     }
+
+    // Preview maps suit vars a→dot, b→bam, c→crak.
+    private static char SuitLetter(char var) => var switch { 'a' => 'd', 'b' => 'b', _ => 'c' };
+
+    private static MahjongTutor.Core.Tiles.Tile? PreviewTile(SlotSpec s) => s.Value switch
+    {
+        SlotValue.Fixed f => f.Tile,
+        SlotValue.Rank r when s.Suit.Kind == SuitReqKind.Var =>
+            (MahjongTutor.Core.Tiles.Tile)(SuitBase(s.Suit.Var) + r.Value),
+        SlotValue.SuitDragon when s.Suit.Kind == SuitReqKind.Var =>
+            SuitLetter(s.Suit.Var) switch
+            {
+                'd' => MahjongTutor.Core.Tiles.Tile.DW,
+                'b' => MahjongTutor.Core.Tiles.Tile.DG,
+                _ => MahjongTutor.Core.Tiles.Tile.DR,
+            },
+        _ => null,
+    };
+
+    private static int SuitBase(char var) => SuitLetter(var) switch
+    {
+        'd' => (int)MahjongTutor.Core.Tiles.Tile.D1 - 1,
+        'b' => (int)MahjongTutor.Core.Tiles.Tile.B1 - 1,
+        _ => (int)MahjongTutor.Core.Tiles.Tile.C1 - 1,
+    };
+
+    private static string PreviewChip(SlotSpec s) => s.Value switch
+    {
+        SlotValue.RankVar v => $"{v.Name}{(v.Offset > 0 ? $"+{v.Offset}" : "")}{(s.Suit.Kind == SuitReqKind.Var ? $"{s.Suit.Var}" : "")}",
+        SlotValue.Rank r => $"{r.Value}{(s.Suit.Kind == SuitReqKind.Any ? "*" : "")}",
+        SlotValue.SuitDragon => "dragon",
+        _ => "?",
+    };
 }
