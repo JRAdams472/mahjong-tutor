@@ -93,8 +93,11 @@ public static class CoachBrain
             return $"You could have won! {tile.DisplayName()} completes a hand on the card.";
         var fit = TopFits(s, seat, 3)
             .FirstOrDefault(f => f.Viable && !f.Hand.Concealed && f.Missing.Contains(tile));
-        return fit == null ? null
-            : $"{tile.DisplayName()} was callable toward {fit.Hand.Id} ({fit.TilesNeeded} tiles out) — worth a pung.";
+        if (fit == null) return null;
+        var call = options.FirstOrDefault(k => k is ClaimKind.Pung or ClaimKind.Kong or ClaimKind.Quint);
+        return call != default
+            ? $"{tile.DisplayName()} — callable toward {fit.Hand.Id} ({fit.TilesNeeded} tiles out), worth a {call.ToString().ToLowerInvariant()}."
+            : $"{tile.DisplayName()} would fit {fit.Hand.Id} ({fit.TilesNeeded} tiles out), but you can't call it — no pair in hand.";
     }
 
     /// <summary>Note when a discard was suboptimal (null = optimal choice).</summary>
