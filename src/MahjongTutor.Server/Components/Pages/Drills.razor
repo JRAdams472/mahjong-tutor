@@ -24,11 +24,12 @@ else
     {
         <h2>@(_mode == "pass" ? "Pick the 3 tiles you'd pass" : "Pick the tile to discard")</h2>
         <div class="myrack">
-            @foreach (var t in _rack.ToList())
+            @{ var rack = _rack.ToList(); }
+            @for (var i = 0; i < rack.Count; i++)
             {
-                var tt = t;
-                <span class="@(_selected.Contains(tt) ? "sel" : "")" @onclick="() => Click(tt)">
-                    <TileImg TileKind="tt" />
+                var idx = i;
+                <span class="@(_selected.Contains(idx) ? "sel" : "")" @onclick="() => Click(idx)">
+                    <TileImg TileKind="rack[idx]" />
                 </span>
             }
         </div>
@@ -50,7 +51,7 @@ else
     private MahjongCard? _card;
     private string? _mode, _result;
     private TileBag? _rack;
-    private List<Tile> _selected = [];
+    private List<int> _selected = [];
 
     protected override async Task OnInitializedAsync() =>
         _card = await Store.GetActiveAsync();
@@ -66,35 +67,37 @@ else
         foreach (var t in wall.Take(mode == "pass" ? 13 : 14)) _rack.Add(t);
     }
 
-    private void Click(Tile t)
+    private void Click(int idx)
     {
         if (_result != null) return;
-        if (_selected.Contains(t)) _selected.Remove(t);
-        else if (_mode == "discard") { _selected = [t]; }
-        else if (_selected.Count < 3) _selected.Add(t);
+        if (_selected.Contains(idx)) _selected.Remove(idx);
+        else if (_mode == "discard") { _selected = [idx]; }
+        else if (_selected.Count < 3) _selected.Add(idx);
     }
 
     private void Check()
     {
+        var rack = _rack!.ToList();
         var grades = CoachBrain.GradeRack(_rack!, _card!);
         if (_mode == "discard")
         {
-            var mine = grades.First(g => g.Tile == _selected[0]);
+            var tile = rack[_selected[0]];
+            var mine = grades.First(g => g.Tile == tile);
             var best = grades[0].Tile.DisplayName();
             _result = mine.Delta == 0
-                ? $"✅ <b>{_selected[0].DisplayName()}</b> is the best play — {mine.NeedAfter} tiles out."
-                : $"❌ <b>{_selected[0].DisplayName()}</b> leaves you {mine.NeedAfter} out (+{mine.Delta}) — " +
+                ? $"✅ <b>{tile.DisplayName()}</b> is the best play — {mine.NeedAfter} tiles out."
+                : $"❌ <b>{tile.DisplayName()}</b> leaves you {mine.NeedAfter} out (+{mine.Delta}) — " +
                   $"coach preferred <b>{best}</b>.";
         }
         else
         {
             var best = grades.SelectMany(g => Enumerable.Repeat(g.Tile, _rack![g.Tile])).Take(3).ToList();
-            var hits = _selected.Count(best.Contains);
+            var hits = _selected.Count(i => best.Contains(rack[i]));
             _result = (hits == 3
                 ? "✅ Perfect pass — coach agrees on all three."
                 : $"🟡 {hits}/3 match the coach's picks") +
                 $" — best: {string.Join(", ", best.Select(t => t.DisplayName()))}, " +
-                $"you picked: {string.Join(", ", _selected.Select(t => t.DisplayName()))}";
+                $"you picked: {string.Join(", ", _selected.Select(i => rack[i].DisplayName()))}";
         }
     }
 }
