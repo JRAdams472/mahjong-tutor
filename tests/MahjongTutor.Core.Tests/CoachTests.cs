@@ -98,7 +98,7 @@ public class CoachTests
         Assert.Null(CoachBrain.DiscardNote(e.State, 0, Tile.C9));       // best play
         var note = CoachBrain.DiscardNote(e.State, 0, Tile.D1);       // throws away the pair
         Assert.NotNull(note);
-        Assert.Contains("9c", note);
+        Assert.Contains("9 crack", note);
     }
 }
 

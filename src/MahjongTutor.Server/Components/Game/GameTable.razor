@@ -112,7 +112,7 @@
                 {
                     var xx = x;
                     <button class="btn" @onclick="() => Act(() => OnExchange.InvokeAsync(xx))">
-                        Swap @xx.natural.Code() for joker
+                        Swap @xx.natural.DisplayName() for joker
                     </button>
                 }
                 <button class="btn" @onclick="() => Act(() => OnMahjong.InvokeAsync())">Mahjong!</button>

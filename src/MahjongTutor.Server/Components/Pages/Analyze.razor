@@ -36,7 +36,7 @@
     @foreach (var g in _grades!)
     {
         <div class="fit">
-            <TileImg TileKind="g.Tile" /> <b>@g.Tile.Code()</b> — leaves you @g.NeedAfter out
+            <TileImg TileKind="g.Tile" /> <b>@g.Tile.DisplayName()</b> — leaves you @g.NeedAfter out
             @(g.Delta == 0 ? "· best play" : $"· +{g.Delta} worse")
         </div>
     }

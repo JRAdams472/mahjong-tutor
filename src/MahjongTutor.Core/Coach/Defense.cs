@@ -79,7 +79,7 @@ public static class Defense
         if (d == null) return null;
         var who = string.Join(", ", d.Callers.Select(c => $"seat {c}"));
         return d.CouldWin
-            ? $"Dangerous — {who} may be waiting on exactly {tile.Code()} for mahjong."
-            : $"{who} could probably use {tile.Code()} — a live tile.";
+            ? $"Dangerous — {who} may be waiting on exactly {tile.DisplayName()} for mahjong."
+            : $"{who} could probably use {tile.DisplayName()} — a live tile.";
     }
 }

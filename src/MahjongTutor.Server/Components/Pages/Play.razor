@@ -122,8 +122,8 @@ else
     {
         if (Engine == null) return;
         var s = Engine.State;
-        var ctx = $"My tiles: {Codes(s.Seats[0].Concealed.ToList())}.\n" +
-                  $"Exposures: {string.Join(" | ", s.Seats[0].Exposures.Select(m => Codes(m.Tiles)))}.\n" +
+        var ctx = $"My tiles: {Names(s.Seats[0].Concealed.ToList())}.\n" +
+                  $"Exposures: {string.Join(" | ", s.Seats[0].Exposures.Select(m => Names(m.Tiles)))}.\n" +
                   $"Coach's current advice: {Suggestion(s).Value}.\n" +
                   $"Best fits: {string.Join("; ", CoachBrain.TopFits(s, 0, 3).Select(f => $"{f.Hand.Id} ({f.TilesNeeded} out)"))}.";
         _answer = "…";
@@ -173,7 +173,7 @@ else
             if (s.CharlestonStage == CharlestonStage.Vote) return new("Second Charleston? Coach votes by hand messiness.");
             if (s.PendingPasses.ContainsKey(0)) return new("Waiting on the other players…");
             var pass = CoachBrain.SuggestPass(s, 0);
-            return new($"Coach suggests passing: {Codes(pass)}");
+            return new($"Coach suggests passing: {Names(pass)}");
         }
         if (s.Stage == TurnStage.CallWindow && s.PendingOptions.TryGetValue(0, out var opts)
             && !s.PendingResponded.Contains(0))
@@ -186,14 +186,14 @@ else
         {
             var d = CoachBrain.SuggestPass(s, 0, 1);
             var warn = Defense.DangerNote(s, 0, d[0]);
-            return new($"Coach would discard: <b>{d[0].Code()}</b>" +
+            return new($"Coach would discard: <b>{d[0].DisplayName()}</b>" +
                        (warn != null ? $" — <span class='warn'>{warn}</span>" : ""));
         }
         return new("Waiting…");
     }
 
-    private static string Codes(IEnumerable<Tile> ts) =>
-        string.Join(" ", ts.Select(t => t.Code()));
+    private static string Names(IEnumerable<Tile> ts) =>
+        string.Join(", ", ts.Select(t => t.DisplayName()));
 
     private async Task Act(Func<Task> action)
     {

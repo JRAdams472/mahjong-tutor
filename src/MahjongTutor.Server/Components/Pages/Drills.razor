@@ -80,10 +80,10 @@ else
         if (_mode == "discard")
         {
             var mine = grades.First(g => g.Tile == _selected[0]);
-            var best = grades[0].Tile.Code();
+            var best = grades[0].Tile.DisplayName();
             _result = mine.Delta == 0
-                ? $"✅ <b>{_selected[0].Code()}</b> is the best play — {mine.NeedAfter} tiles out."
-                : $"❌ <b>{_selected[0].Code()}</b> leaves you {mine.NeedAfter} out (+{mine.Delta}) — " +
+                ? $"✅ <b>{_selected[0].DisplayName()}</b> is the best play — {mine.NeedAfter} tiles out."
+                : $"❌ <b>{_selected[0].DisplayName()}</b> leaves you {mine.NeedAfter} out (+{mine.Delta}) — " +
                   $"coach preferred <b>{best}</b>.";
         }
         else
@@ -93,8 +93,8 @@ else
             _result = (hits == 3
                 ? "✅ Perfect pass — coach agrees on all three."
                 : $"🟡 {hits}/3 match the coach's picks") +
-                $" — best: {string.Join(" ", best.Select(t => t.Code()))}, " +
-                $"you picked: {string.Join(" ", _selected.Select(t => t.Code()))}";
+                $" — best: {string.Join(", ", best.Select(t => t.DisplayName()))}, " +
+                $"you picked: {string.Join(", ", _selected.Select(t => t.DisplayName()))}";
         }
     }
 }

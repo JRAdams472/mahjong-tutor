@@ -26,10 +26,10 @@
 
     private static string Describe(GameEvent e) => e switch
     {
-        TileDrawn d => $"seat {d.Seat} draws {d.Tile.Code()}",
-        TileDiscarded d => $"seat {d.Seat} discards {d.Tile.Code()}",
-        MeldExposed m => $"seat {m.Seat} exposes {string.Join(" ", m.Meld.Tiles.Select(t => t.Code()))}",
-        JokerExchanged x => $"seat {x.Seat} swaps {x.Natural.Code()} for a joker (seat {x.MeldOwner})",
+        TileDrawn d => $"seat {d.Seat} draws {d.Tile.DisplayName()}",
+        TileDiscarded d => $"seat {d.Seat} discards {d.Tile.DisplayName()}",
+        MeldExposed m => $"seat {m.Seat} exposes {string.Join(", ", m.Meld.Tiles.Select(t => t.DisplayName()))}",
+        JokerExchanged x => $"seat {x.Seat} swaps {x.Natural.DisplayName()} for a joker (seat {x.MeldOwner})",
         ClaimMade c => c.Kind is { } k ? $"seat {c.Seat} calls {k}" : $"seat {c.Seat} passes",
         MahjongDeclared m => $"seat {m.Seat} declares mahjong — {m.Hand.Id}{(m.SelfPicked ? " (self-picked)" : "")}",
         HandDeclaredDead d => $"seat {d.Seat} is dead — {d.Reason}",
