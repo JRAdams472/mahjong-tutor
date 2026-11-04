@@ -35,6 +35,8 @@ docker compose up --build
 
 Then browse to `http://localhost:8420` — or `http://<your-LAN-IP>:8420` from any other machine on the network (e.g. your wife's computer). The compose stack starts Postgres automatically.
 
+> **Security note for public/self-hosted use:** this is a LAN/home-lab app with no user accounts. The default `POSTGRES_PASSWORD` is `mahjong` (override it via env). **No National Mah Jongg League card data ships** — cards are copyrighted; users enter their own.
+
 ## Develop
 
 ```powershell
