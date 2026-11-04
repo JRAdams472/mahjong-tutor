@@ -3,7 +3,7 @@
 @inject TileSetManager Tiles
 
 <img class="tile @Class" src="@Tiles.TilePath(TileKind, null, Variant)"
-     title="@TileKind.Code()" draggable="false" />
+     title="@TileKind.DisplayName()" draggable="false" />
 
 @code {
     [Parameter] public Tile TileKind { get; set; }

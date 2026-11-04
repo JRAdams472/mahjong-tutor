@@ -78,6 +78,19 @@ public static class TileKinds
         _ => throw new ArgumentOutOfRangeException(nameof(t)),
     };
 
+    /// <summary>Human-readable name: "3 dot", "north", "green dragon"…</summary>
+    public static string DisplayName(this Tile t) => t switch
+    {
+        >= Tile.D1 and <= Tile.D9 => $"{t.RankOf()} dot",
+        >= Tile.B1 and <= Tile.B9 => $"{t.RankOf()} bam",
+        >= Tile.C1 and <= Tile.C9 => $"{t.RankOf()} crak",
+        Tile.WN => "north", Tile.WE => "east",
+        Tile.WS => "south", Tile.WW => "west",
+        Tile.DR => "red dragon", Tile.DG => "green dragon", Tile.DW => "white dragon",
+        Tile.F => "flower", Tile.J => "joker",
+        _ => t.Code(),
+    };
+
     /// <summary>Parses a code produced by <see cref="Code"/>.</summary>
     public static Tile FromCode(string code)
     {
